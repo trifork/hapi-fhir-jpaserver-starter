@@ -54,16 +54,16 @@ public class FhirStarterTestContainers {
 		// Due to the dynamic nature of the keycloak container ports, we cannot add a static test application.yml file, so instead we add a new property source
 		@Override
 		public void initialize(@NotNull ConfigurableApplicationContext applicationContext) {
-				final GenericContainer<?> keycloakContainer = getKeycloakContainer();
-				Properties props = new Properties();
-				props.put("spring.security.oauth2.resourceserver.jwt.jwk-set-uri", "http://localhost:" + keycloakContainer.getMappedPort(8080)+"/auth/realms/smart/protocol/openid-connect/certs");
-				props.put("spring.security.oauth2.resourceserver.jwt.issuer-uri", "http://localhost:" + keycloakContainer.getMappedPort(8080)+"/auth/realms/smart");
-				applicationContext.getEnvironment().getPropertySources().addFirst(new PropertiesPropertySource("mockProperties",props));
+			final GenericContainer<?> keycloakContainer = getKeycloakContainer();
+			Properties props = new Properties();
+			props.put("spring.security.oauth2.resourceserver.jwt.jwk-set-uri", "http://localhost:" + keycloakContainer.getMappedPort(8080) + "/auth/realms/smart/protocol/openid-connect/certs");
+			props.put("spring.security.oauth2.resourceserver.jwt.issuer-uri", "http://localhost:" + keycloakContainer.getMappedPort(8080) + "/auth/realms/smart");
+			applicationContext.getEnvironment().getPropertySources().addFirst(new PropertiesPropertySource("keycloakProperties", props));
 		}
 	}
 
-	private static Network getNetwork(){
-		if(internalNetwork == null){
+	private static Network getNetwork() {
+		if (internalNetwork == null) {
 			internalNetwork = Network.newNetwork();
 		}
 		return internalNetwork;

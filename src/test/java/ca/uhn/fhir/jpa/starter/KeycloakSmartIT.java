@@ -29,6 +29,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = Application.class)
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(initializers = FhirStarterTestContainers.KeycloakContainerInitializer.class)
+@ActiveProfiles("smart")
 class KeycloakSmartIT {
 
 	private static String tokenEndpoint = "/auth/realms/smart/protocol/openid-connect/token";

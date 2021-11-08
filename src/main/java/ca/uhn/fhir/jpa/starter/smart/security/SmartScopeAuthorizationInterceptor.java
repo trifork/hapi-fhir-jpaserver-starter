@@ -12,16 +12,16 @@ import ca.uhn.fhir.rest.server.interceptor.auth.RuleBuilder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @ConditionalOnProperty(prefix = "hapi.fhir", name = "smart_enabled", havingValue = "true")
+@Component
 public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor {
 
 	private final List<SmartAuthorizationRuleBuilder> ruleBuilders;
 	public static final String RULE_DENY_ALL_UNKNOWN_REQUESTS = "Deny all requests that do not match any pre-defined rules";
-	public static final String RULE_DENY_UNAUTHORIZED_REQUESTS = "No JWT given";
-
 
 	private final JwtDecoder jwtDecoder;
 
