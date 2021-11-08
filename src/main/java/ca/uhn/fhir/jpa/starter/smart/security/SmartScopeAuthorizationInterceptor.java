@@ -9,11 +9,13 @@ import ca.uhn.fhir.rest.server.interceptor.auth.AuthorizationFlagsEnum;
 import ca.uhn.fhir.rest.server.interceptor.auth.AuthorizationInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.auth.IAuthRule;
 import ca.uhn.fhir.rest.server.interceptor.auth.RuleBuilder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 import java.util.*;
 
+@ConditionalOnProperty(prefix = "hapi.fhir", name = "smart_enabled", havingValue = "true")
 public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor {
 
 	private final List<SmartAuthorizationRuleBuilder> ruleBuilders;

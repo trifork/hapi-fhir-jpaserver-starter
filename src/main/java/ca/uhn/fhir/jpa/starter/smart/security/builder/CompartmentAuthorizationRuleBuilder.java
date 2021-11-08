@@ -71,7 +71,6 @@ public class CompartmentAuthorizationRuleBuilder extends SmartAuthorizationRuleB
 	}
 
 	protected void applyResourceScopeOperationClassifier(IAuthRuleBuilder rules, IIdType idType, SmartClinicalScope smartClinicalScope) {
-		//cannot fully restrict access to type and instance level operations by patient id
 		if (smartClinicalScope.getResource().equalsIgnoreCase(super.getCompartmentResource(smartClinicalScope.getCompartment()))) {
 			rules.allow().operation().withAnyName().onInstance(idType);
 		}

@@ -48,7 +48,6 @@ public class SmartClinicalScope {
 	}
 
 	public SmartOperationEnum getOperation() {
-		//fix logic in base class, and not or
 		return operation;
 	}
 
