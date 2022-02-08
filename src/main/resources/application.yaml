@@ -14,12 +14,12 @@ spring:
 #  autoconfigure:
 #      exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
 # Enables JWT signature validation (BEWARE: This effectively disables all security if no JWT VALUE checking logic is enabled, fx hapi.smart_enabled or implement your own logic through ca.uhn.fhir.jpa.starter.config.JwtSecurityConfig)
-#  security:
-#    oauth2:
-#      resourceserver:
-#        jwt:
-#          jwk-set-uri: http://localhost:8081/auth/realms/smart/protocol/openid-connect/certs
-#          issuer-uri: http://localhost:8081/auth/realms/smart
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8081/auth/realms/smart/protocol/openid-connect/certs
+          issuer-uri: http://localhost:8081/auth/realms/smart
 #
 
   jpa:
@@ -51,7 +51,7 @@ hapi:
     ### This enables the swagger-ui at /fhir/swagger-ui/index.html as well as the /fhir/api-docs (see https://hapifhir.io/hapi-fhir/docs/server_plain/openapi.html)
     openapi_enabled: true
     ### Enables the default implementation of SMART (http://www.hl7.org/fhir/smart-app-launch/scopes-and-launch-context/index.html), requires JWT signature validation implementation (spring.security.oauth2.resourceserver.jwt)
-#    smart_enabled: true
+    smart_enabled: true
     ### This is the FHIR version. Choose between, DSTU2, DSTU3, R4 or R5
     fhir_version: R4
 ### enable to use the ApacheProxyAddressStrategy which uses X-Forwarded-* headers
