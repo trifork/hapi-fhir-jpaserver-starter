@@ -43,8 +43,8 @@ import static org.mockito.Mockito.when;
 @ActiveProfiles("smart")
 class AuthorizationInterceptorTest {
 
-	public static final String ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE = "HTTP 403 : Access denied by rule: Deny all requests that do not match any pre-defined rules";
-	public static final String ACCESS_DENIED_BY_RULE_DENY_ALL_REQUESTS_IF_NO_ID_EXCEPTION_MESSAGE = "HTTP 403 : Access denied by rule: Deny ALL patient requests if no launch context is given!";
+	public static final String ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny all requests that do not match any pre-defined rules";
+	public static final String ACCESS_DENIED_BY_RULE_DENY_ALL_REQUESTS_IF_NO_ID_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny ALL patient requests if no launch context is given!";
 	private IGenericClient client;
 	private FhirContext ctx;
 
@@ -97,7 +97,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : Access denied by default policy (no applicable rules)", forbiddenOperationException.getMessage());
+		assertEquals("HTTP 403 : HAPI-0334: Access denied by default policy (no applicable rules)", forbiddenOperationException.getMessage());
 	}
 
 	@Test
@@ -152,7 +152,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : Access denied by rule: "+clinicalScope+" is not a valid clinical scope", forbiddenOperationException.getMessage());
+		assertEquals("HTTP 403 : HAPI-0333: Access denied by rule: "+clinicalScope+" is not a valid clinical scope", forbiddenOperationException.getMessage());
 	}
 
 	@Test
@@ -169,7 +169,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : Access denied by rule: unsupported is not a legal operation", forbiddenOperationException.getMessage());
+		assertEquals("HTTP 403 : HAPI-0333: Access denied by rule: unsupported is not a legal operation", forbiddenOperationException.getMessage());
 	}
 
 	@Test

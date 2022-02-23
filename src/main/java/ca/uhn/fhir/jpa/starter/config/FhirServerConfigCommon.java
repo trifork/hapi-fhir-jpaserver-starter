@@ -9,9 +9,13 @@ import ca.uhn.fhir.jpa.model.config.PartitionSettings.CrossPartitionReferenceMod
 import ca.uhn.fhir.jpa.model.entity.ModelConfig;
 import ca.uhn.fhir.jpa.starter.AppProperties;
 import ca.uhn.fhir.jpa.subscription.channel.subscription.SubscriptionDeliveryHandlerFactory;
+import ca.uhn.fhir.jpa.subscription.match.deliver.email.EmailSenderImpl;
 import ca.uhn.fhir.jpa.subscription.match.deliver.email.IEmailSender;
-import ca.uhn.fhir.jpa.subscription.match.deliver.email.JavaMailEmailSender;
+import ca.uhn.fhir.rest.server.mail.MailConfig;
+import ca.uhn.fhir.rest.server.mail.MailSvc;
 import com.google.common.base.Strings;
+import java.util.HashSet;
+import java.util.Optional;
 import org.hl7.fhir.dstu2.model.Subscription;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.context.annotation.Bean;
@@ -20,8 +24,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-
-import java.util.Optional;
 
 /**
  * This is the primary configuration file for the example server
@@ -63,7 +65,7 @@ public class FhirServerConfigCommon {
     if (appProperties.getSubscription().getEmail() != null) {
       ourLog.info("Email subscriptions enabled");
     }
-    
+
     if (appProperties.getEnable_index_contained_resource() == Boolean.TRUE) {
         ourLog.info("Indexed on contained resource enabled");
       }
@@ -117,6 +119,8 @@ public class FhirServerConfigCommon {
     }
 
     retVal.setFilterParameterEnabled(appProperties.getFilter_search_enabled());
+	 retVal.setAdvancedLuceneIndexing(appProperties.getAdvanced_lucene_indexing());
+	 retVal.setTreatBaseUrlsAsLocal(new HashSet<>(appProperties.getLocal_base_urls()));
 
     return retVal;
   }
@@ -137,7 +141,7 @@ public class FhirServerConfigCommon {
       if(appProperties.getPartitioning().getAllow_references_across_partitions()) {
         retVal.setAllowReferencesAcrossPartitions(CrossPartitionReferenceMode.ALLOWED_UNQUALIFIED);
       } else {
-        retVal.setAllowReferencesAcrossPartitions(CrossPartitionReferenceMode.NOT_ALLOWED); 
+        retVal.setAllowReferencesAcrossPartitions(CrossPartitionReferenceMode.NOT_ALLOWED);
       }
     }
 
@@ -152,8 +156,8 @@ public class FhirServerConfigCommon {
   }
 
   @Bean
-  public ModelConfig modelConfig(AppProperties appProperties) {
-    ModelConfig modelConfig = new ModelConfig();
+  public ModelConfig modelConfig(AppProperties appProperties, DaoConfig daoConfig) {
+    ModelConfig modelConfig = daoConfig.getModelConfig();
     modelConfig.setAllowContainsSearches(appProperties.getAllow_contains_searches());
     modelConfig.setAllowExternalReferences(appProperties.getAllow_external_references());
     modelConfig.setDefaultSearchParamsCanBeOverridden(appProperties.getAllow_override_default_search_params());
@@ -170,7 +174,7 @@ public class FhirServerConfigCommon {
     }
 
     modelConfig.setNormalizedQuantitySearchLevel(appProperties.getNormalized_quantity_search_level());
-    
+
     modelConfig.setIndexOnContainedResources(appProperties.getEnable_index_contained_resource());
     return modelConfig;
   }
@@ -208,22 +212,20 @@ public class FhirServerConfigCommon {
   @Bean()
   public IEmailSender emailSender(AppProperties appProperties, Optional<SubscriptionDeliveryHandlerFactory> subscriptionDeliveryHandlerFactory) {
     if (appProperties.getSubscription() != null && appProperties.getSubscription().getEmail() != null) {
-      JavaMailEmailSender retVal = new JavaMailEmailSender();
+		 MailConfig mailConfig = new MailConfig();
 
       AppProperties.Subscription.Email email = appProperties.getSubscription().getEmail();
-      retVal.setSmtpServerHostname(email.getHost());
-      retVal.setSmtpServerPort(email.getPort());
-      retVal.setSmtpServerUsername(email.getUsername());
-      retVal.setSmtpServerPassword(email.getPassword());
-      retVal.setAuth(email.getAuth());
-      retVal.setStartTlsEnable(email.getStartTlsEnable());
-      retVal.setStartTlsRequired(email.getStartTlsRequired());
-      retVal.setQuitWait(email.getQuitWait());
+      mailConfig.setSmtpHostname(email.getHost());
+      mailConfig.setSmtpPort(email.getPort());
+      mailConfig.setSmtpUsername(email.getUsername());
+      mailConfig.setSmtpPassword(email.getPassword());
+      mailConfig.setSmtpUseStartTLS(email.getStartTlsEnable());
 
-      if(subscriptionDeliveryHandlerFactory.isPresent())
-       subscriptionDeliveryHandlerFactory.get().setEmailSender(retVal);
+		IEmailSender emailSender = new EmailSenderImpl(new MailSvc(mailConfig));
 
-      return retVal;
+		subscriptionDeliveryHandlerFactory.ifPresent(theSubscriptionDeliveryHandlerFactory -> theSubscriptionDeliveryHandlerFactory.setEmailSender(emailSender));
+
+      return emailSender;
     }
 
     return null;

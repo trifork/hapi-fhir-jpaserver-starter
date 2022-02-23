@@ -3,14 +3,15 @@ package ca.uhn.fhir.jpa.starter.config;
 import ca.uhn.fhir.context.ConfigurationException;
 import ca.uhn.fhir.jpa.config.BaseJavaConfigDstu3;
 import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
-import ca.uhn.fhir.jpa.search.lastn.ElasticsearchSvcImpl;
 import ca.uhn.fhir.jpa.starter.AppProperties;
+import ca.uhn.fhir.jpa.starter.ElasticsearchConfig;
 import ca.uhn.fhir.jpa.starter.annotations.OnDSTU3Condition;
 import ca.uhn.fhir.jpa.starter.cql.StarterCqlDstu3Config;
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +23,7 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 
 @Configuration
 @Conditional(OnDSTU3Condition.class)
-@Import(StarterCqlDstu3Config.class)
+@Import({StarterCqlDstu3Config.class, ElasticsearchConfig.class})
 public class FhirServerConfigDstu3 extends BaseJavaConfigDstu3 {
 
   @Autowired
@@ -63,8 +64,9 @@ public class FhirServerConfigDstu3 extends BaseJavaConfigDstu3 {
   
   @Override
   @Bean
-  public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
-    LocalContainerEntityManagerFactoryBean retVal = super.entityManagerFactory();
+  public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+	  ConfigurableListableBeanFactory myConfigurableListableBeanFactory) {
+    LocalContainerEntityManagerFactoryBean retVal = super.entityManagerFactory(myConfigurableListableBeanFactory);
     retVal.setPersistenceUnitName("HAPI_PU");
 
     try {
@@ -73,7 +75,9 @@ public class FhirServerConfigDstu3 extends BaseJavaConfigDstu3 {
       throw new ConfigurationException("Could not set the data source due to a configuration issue", e);
     }
 
-    retVal.setJpaProperties(EnvironmentHelper.getHibernateProperties(configurableEnvironment));
+    retVal.setJpaProperties(EnvironmentHelper.getHibernateProperties(configurableEnvironment,
+		 myConfigurableListableBeanFactory));
+
     return retVal;
   }
 
@@ -84,24 +88,4 @@ public class FhirServerConfigDstu3 extends BaseJavaConfigDstu3 {
     retVal.setEntityManagerFactory(entityManagerFactory);
     return retVal;
   }
-
-  @Bean()
-  public ElasticsearchSvcImpl elasticsearchSvc() {
-    if (EnvironmentHelper.isElasticsearchEnabled(configurableEnvironment)) {
-      String elasticsearchUrl = EnvironmentHelper.getElasticsearchServerUrl(configurableEnvironment);
-      String elasticsearchHost;
-      if (elasticsearchUrl.startsWith("http")) {
-        elasticsearchHost = elasticsearchUrl.substring(elasticsearchUrl.indexOf("://") + 3, elasticsearchUrl.lastIndexOf(":"));
-      } else {
-        elasticsearchHost = elasticsearchUrl.substring(0, elasticsearchUrl.indexOf(":"));
-      }
-      String elasticsearchUsername = EnvironmentHelper.getElasticsearchServerUsername(configurableEnvironment);
-      String elasticsearchPassword = EnvironmentHelper.getElasticsearchServerPassword(configurableEnvironment);
-      int elasticsearchPort = Integer.parseInt(elasticsearchUrl.substring(elasticsearchUrl.lastIndexOf(":")+1));
-      return new ElasticsearchSvcImpl(elasticsearchHost, elasticsearchPort, elasticsearchUsername, elasticsearchPassword);
-    } else {
-      return null;
-    }
-  }
-
 }

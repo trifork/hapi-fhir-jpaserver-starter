@@ -6,6 +6,7 @@ import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
 import ca.uhn.fhir.jpa.starter.AppProperties;
 import ca.uhn.fhir.jpa.starter.annotations.OnDSTU2Condition;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -59,8 +60,9 @@ public class FhirServerConfigDstu2 extends BaseJavaConfigDstu2 {
 
   @Override
   @Bean()
-  public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
-    LocalContainerEntityManagerFactoryBean retVal = super.entityManagerFactory();
+  public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+	  ConfigurableListableBeanFactory myConfigurableListableBeanFactory) {
+    LocalContainerEntityManagerFactoryBean retVal = super.entityManagerFactory(myConfigurableListableBeanFactory);
     retVal.setPersistenceUnitName("HAPI_PU");
 
     try {
@@ -68,7 +70,7 @@ public class FhirServerConfigDstu2 extends BaseJavaConfigDstu2 {
     } catch (Exception e) {
       throw new ConfigurationException("Could not set the data source due to a configuration issue", e);
     }
-    retVal.setJpaProperties(EnvironmentHelper.getHibernateProperties(configurableEnvironment));
+    retVal.setJpaProperties(EnvironmentHelper.getHibernateProperties(configurableEnvironment, myConfigurableListableBeanFactory));
     return retVal;
   }
 

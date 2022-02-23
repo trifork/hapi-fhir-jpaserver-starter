@@ -27,7 +27,7 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 
 
 	public SmartScopeAuthorizationInterceptor(List<SmartAuthorizationRuleBuilder> ruleBuilders, JwtDecoder jwtDecoder) {
-		this.setFlags(AuthorizationFlagsEnum.NO_NOT_PROACTIVELY_BLOCK_COMPARTMENT_READ_ACCESS);
+		this.setFlags(AuthorizationFlagsEnum.DO_NOT_PROACTIVELY_BLOCK_COMPARTMENT_READ_ACCESS);
 		this.ruleBuilders = ruleBuilders;
 		this.jwtDecoder = jwtDecoder;
 	}
