@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
      "hapi.fhir.fhir_version=dstu2",
      "spring.datasource.url=jdbc:h2:mem:dbr2",
 	  "spring.main.allow-bean-definition-overriding=true",
-	  "hapi.fhir.smart_enabled=false"
+	  "hapi.fhir.smart_enabled=false",
+	  "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
   })
 public class ExampleServerDstu2IT {
 

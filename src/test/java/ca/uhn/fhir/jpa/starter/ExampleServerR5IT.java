@@ -40,7 +40,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 	  "hapi.fhir.smart_enabled=false",
      "hapi.fhir.subscription.websocket_enabled=true",
 	  "hapi.fhir.subscription.websocket_enabled=true",
-	  "spring.main.allow-bean-definition-overriding=true"
+	  "spring.main.allow-bean-definition-overriding=true",
+	  "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
   })
 public class ExampleServerR5IT {
 

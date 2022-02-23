@@ -49,7 +49,8 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
     "elasticsearch.username=SomeUsername",
     "elasticsearch.password=SomePassword",
 	 "elasticsearch.protocol=http",
-	  "spring.main.allow-bean-definition-overriding=true"
+	  "spring.main.allow-bean-definition-overriding=true",
+	  "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
   })
 @ContextConfiguration(initializers = ElasticsearchLastNR4IT.Initializer.class)
 public class ElasticsearchLastNR4IT {

@@ -26,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 	  "hapi.fhir.smart_enabled=false",
     "hapi.fhir.subscription.websocket_enabled=true",
     "hapi.fhir.partitioning.partitioning_include_in_search_hashes=false",
-	  "spring.main.allow-bean-definition-overriding=true"
+	  "spring.main.allow-bean-definition-overriding=true",
+	  "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
 
   })
 public class MultitenantServerR4IT {
