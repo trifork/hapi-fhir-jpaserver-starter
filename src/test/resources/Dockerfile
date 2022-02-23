@@ -20,5 +20,6 @@ ENV KEYCLOAK_FRONTEND_URL="http://localhost:8080/auth/"
 ENV DB_VENDOR="POSTGRES"
 ENV DB_USER="keycloak"
 ENV DB_PASSWORD="keycloak"
+ENV DB_ADDR="postgres-db"
 ENV KEYCLOAK_IMPORT="/tmp/realm.json"
 

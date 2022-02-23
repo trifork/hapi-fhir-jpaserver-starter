@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
      "spring.datasource.url=jdbc:h2:mem:dbr3",
      "hapi.fhir.cql_enabled=true",
      "hapi.fhir.fhir_version=dstu3",
+	  "hapi.fhir.smart_enabled=false",
      "hapi.fhir.subscription.websocket_enabled=true",
      "hapi.fhir.allow_external_references=true",
      "hapi.fhir.allow_placeholder_references=true",

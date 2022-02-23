@@ -14,6 +14,7 @@ hapi:
     #  - Patient
     #  - Observation
     allow_cascading_deletes: true
+    smart_enabled: false
 #    allow_contains_searches: true
 #    allow_external_references: true
 #    allow_multiple_delete: true

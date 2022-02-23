@@ -21,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
      "spring.batch.job.enabled=false",
      "hapi.fhir.fhir_version=dstu2",
      "spring.datasource.url=jdbc:h2:mem:dbr2",
-	  "spring.main.allow-bean-definition-overriding=true"
+	  "spring.main.allow-bean-definition-overriding=true",
+	  "hapi.fhir.smart_enabled=false"
   })
 public class ExampleServerDstu2IT {
 

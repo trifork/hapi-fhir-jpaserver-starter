@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 		"hapi.fhir.fhir_version=r4",
 		"hapi.fhir.subscription.websocket_enabled=true",
 		"hapi.fhir.mdm_enabled=true",
+		"hapi.fhir.smart_enabled=false",
 		// Override is currently required when using MDM as the construction of the MDM
 		// beans are ambiguous as they are constructed multiple places. This is evident
 		// when running in a spring boot environment
