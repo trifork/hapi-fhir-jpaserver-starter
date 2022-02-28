@@ -24,9 +24,10 @@ import ca.uhn.fhir.jpa.provider.TerminologyUploaderProvider;
 import ca.uhn.fhir.jpa.provider.dstu3.JpaConformanceProviderDstu3;
 import ca.uhn.fhir.jpa.provider.ValueSetOperationProvider;
 import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
-import ca.uhn.fhir.jpa.starter.smart.security.SmartScopeAuthorizationInterceptor;
+import ca.uhn.fhir.jpa.starter.smart.security.interceptor.SmartScopeAuthorizationInterceptor;
 import ca.uhn.fhir.jpa.starter.smart.security.builder.CompartmentAuthorizationRuleBuilder;
 import ca.uhn.fhir.jpa.starter.smart.security.builder.SmartAuthorizationRuleBuilder;
+import ca.uhn.fhir.jpa.starter.smart.security.interceptor.SmartSearchNarrowingInterceptor;
 import ca.uhn.fhir.jpa.starter.smart.util.SmartResourceMapping;
 import ca.uhn.fhir.jpa.starter.validation.IRepositoryValidationInterceptorFactory;
 import ca.uhn.fhir.jpa.subscription.util.SubscriptionDebugLogInterceptor;
@@ -113,6 +114,8 @@ public class BaseJpaRestfulServer extends RestfulServer {
 	Optional<MdmProviderLoader> mdmProviderProvider;
 	@Autowired
 	Optional<SmartScopeAuthorizationInterceptor> parentAuthorizationInterceptor;
+	@Autowired
+	Optional<SmartSearchNarrowingInterceptor> smartSearchNarrowingInterceptor;
 	@Autowired
 	Optional<List<SmartAuthorizationRuleBuilder>> smartRuleBuilders;
 	@Autowired
@@ -361,6 +364,7 @@ public class BaseJpaRestfulServer extends RestfulServer {
 			}
 		}
 		parentAuthorizationInterceptor.ifPresent(this::registerInterceptor);
+		smartSearchNarrowingInterceptor.ifPresent(this::registerInterceptor);
 
 		// GraphQL
 		if (appProperties.getGraphql_enabled()) {

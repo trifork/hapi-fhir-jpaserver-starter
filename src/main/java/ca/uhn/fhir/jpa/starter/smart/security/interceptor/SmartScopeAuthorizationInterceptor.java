@@ -1,20 +1,24 @@
-package ca.uhn.fhir.jpa.starter.smart.security;
+package ca.uhn.fhir.jpa.starter.smart.security.interceptor;
 
 import ca.uhn.fhir.jpa.starter.smart.exception.InvalidClinicalScopeException;
 import ca.uhn.fhir.jpa.starter.smart.exception.InvalidSmartOperationException;
 import ca.uhn.fhir.jpa.starter.smart.model.SmartClinicalScope;
 import ca.uhn.fhir.jpa.starter.smart.security.builder.SmartAuthorizationRuleBuilder;
+import ca.uhn.fhir.jpa.starter.smart.util.JwtUtility;
+import ca.uhn.fhir.rest.api.RequestTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
-import ca.uhn.fhir.rest.server.interceptor.auth.AuthorizationFlagsEnum;
-import ca.uhn.fhir.rest.server.interceptor.auth.AuthorizationInterceptor;
-import ca.uhn.fhir.rest.server.interceptor.auth.IAuthRule;
-import ca.uhn.fhir.rest.server.interceptor.auth.RuleBuilder;
+import ca.uhn.fhir.rest.server.interceptor.auth.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static ca.uhn.fhir.jpa.starter.smart.util.JwtUtility.getSmartScopes;
 
 @ConditionalOnProperty(prefix = "hapi.fhir", name = "smart_enabled", havingValue = "true")
 @Component
@@ -34,53 +38,39 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 
 	@Override
 	public List<IAuthRule> buildRuleList(RequestDetails theRequestDetails) {
-		Jwt token = getJwtToken(theRequestDetails);
-
-		List<IAuthRule> ruleList = new ArrayList<>(new RuleBuilder().allow().metadata().build());
+		Jwt token = JwtUtility.getJwtToken(jwtDecoder, theRequestDetails);
+		IAuthRuleBuilder authRuleBuilder = new RuleBuilder();
+		List<IAuthRule> ruleList = new ArrayList<>(authRuleBuilder.allow().metadata().build());
 
 		if (token == null) {
 			return ruleList;
 		}
 
-		try{
+
+		try {
 			Set<SmartClinicalScope> scopes = getSmartScopes(token);
 			Map<String, Object> claims = token.getClaims();
-
 			for (SmartClinicalScope scope : scopes) {
 				String compartmentName = scope.getCompartment();
 				if (compartmentName != null && !compartmentName.isEmpty()) {
 					ruleBuilders.stream().filter(smartAuthorizationRuleBuilder -> smartAuthorizationRuleBuilder.hasRegisteredResource(compartmentName)).forEach(smartAuthorizationRuleBuilder -> {
 						String launchCtxName = smartAuthorizationRuleBuilder.getLaunchCtxName(compartmentName);
 						String launchCtx = (String) claims.get(launchCtxName);
-						ruleList.addAll(smartAuthorizationRuleBuilder.buildRules(launchCtx, scope));
+						if (theRequestDetails.getRequestType().equals(RequestTypeEnum.GET) && theRequestDetails.getId() == null){
+							ruleList.addAll(authRuleBuilder.allow().read().resourcesOfType(theRequestDetails.getResourceName()).withAnyId().build());
+						} else {
+							ruleList.addAll(smartAuthorizationRuleBuilder.buildRules(launchCtx, scope));
+						}
 					});
 				}
 			}
-			ruleList.addAll(new RuleBuilder().denyAll(RULE_DENY_ALL_UNKNOWN_REQUESTS).build());
-		} catch (InvalidClinicalScopeException | InvalidSmartOperationException e){
-			ruleList.addAll(new RuleBuilder().denyAll(e.getMessage()).build());
+			ruleList.addAll(authRuleBuilder.denyAll(RULE_DENY_ALL_UNKNOWN_REQUESTS).build());
+		} catch (InvalidClinicalScopeException | InvalidSmartOperationException e) {
+			ruleList.addAll(authRuleBuilder.denyAll(e.getMessage()).build());
 		}
+
 		return ruleList;
 	}
 
-	protected Jwt getJwtToken(RequestDetails requestDetails) {
-		String authHeader = requestDetails.getHeader("Authorization");
-		if (authHeader == null || authHeader.isEmpty()) {
-			return null;
-		}
-
-		return jwtDecoder.decode(authHeader.replace("Bearer ", ""));
-	}
-
-	protected static Set<SmartClinicalScope> getSmartScopes(Jwt token) {
-		Set<SmartClinicalScope> smartClinicalScopes = new HashSet<>();
-		String[] scopes = token.getClaimAsString("scope").split(" ");
-
-		for (String scope : scopes) {
-			smartClinicalScopes.add(new SmartClinicalScope(scope));
-		}
-
-		return smartClinicalScopes;
-	}
 
 }
