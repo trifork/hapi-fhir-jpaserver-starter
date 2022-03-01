@@ -6,7 +6,9 @@ import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.api.ServerValidationModeEnum;
 import ca.uhn.fhir.rest.gclient.*;
+import ca.uhn.fhir.rest.server.exceptions.AuthenticationException;
 import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
+import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -715,7 +717,6 @@ class AuthorizationInterceptorTest {
 		assertEquals(expectedPatient.getIdElement().getIdPart(), actualPatient.getIdElement().getIdPart());
 	}
 
-
 	@ParameterizedTest
 	@MethodSource({"getReadPractitionerClinicalScopes"})
 	void testBuildRules_readOperationOnPractitionerReadPatientObservation_providedJwtContainsWriteScopesAndPractitionerId(Map<String, Object> claims) {
@@ -788,6 +789,90 @@ class AuthorizationInterceptorTest {
 
 		// ASSERT
 		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenUpdateException.getMessage());
+	}
+
+	@ParameterizedTest
+	@MethodSource({"getReadPatientClinicalScopes"})
+	void testBuildRules_searchOperation_providedJwtContainsReadScope(Map<String, Object> claims) {
+		// ARRANGE
+
+		IBaseResource expectedPatient = patientResourceDao.create(new Patient()).getResource();
+		String id=expectedPatient.getIdElement().getIdPart();
+
+		claims.put("patient", id);
+		mockJwtWithClaims(claims);
+
+		IQuery<IBaseBundle> patientSearchExecutable = client.search().forResource(Patient.class).withAdditionalHeader("Authorization", MOCK_HEADER);
+
+		// ACT
+		Bundle searchBundle = (Bundle) patientSearchExecutable.execute();
+
+
+		// ASSERT
+		assertEquals(1, searchBundle.getEntry().size());
+		assertEquals(searchBundle.getEntry().get(0).getResource().getIdElement().getIdPart(), id);
+	}
+
+	@Test
+	void testBuildRules_searchOperation_providedJwtContainsWriteScope() {
+		// ARRANGE
+
+		IBaseResource expectedPatient = patientResourceDao.create(new Patient()).getResource();
+		String id=expectedPatient.getIdElement().getIdPart();
+
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("patient", id);
+		claims.put("scope","patient/Patient.write");
+		mockJwtWithClaims(claims);
+
+		IQuery<IBaseBundle> patientSearchExecutable = client.search().forResource(Patient.class).withAdditionalHeader("Authorization", MOCK_HEADER);
+
+		// ACT
+		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientSearchExecutable::execute);
+
+		// ASSERT
+		assertEquals("HTTP 403 : Read scope is required when performing a narrowing search operation", forbiddenOperationException.getMessage());
+	}
+
+	@Test
+	void testBuildRules_searchOperation_noScope() {
+		// ARRANGE
+
+		IBaseResource expectedPatient = patientResourceDao.create(new Patient()).getResource();
+		String id=expectedPatient.getIdElement().getIdPart();
+
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("patient", id);
+		mockJwtWithClaims(claims);
+
+		IQuery<IBaseBundle> patientSearchExecutable = client.search().forResource(Patient.class).withAdditionalHeader("Authorization", MOCK_HEADER);
+
+		// ACT
+		AuthenticationException authenticationException = assertThrows(AuthenticationException.class, patientSearchExecutable::execute);
+
+		// ASSERT
+		assertEquals("HTTP 401 : No scope provided", authenticationException.getMessage());
+	}
+
+	@Test
+	void testBuildRules_searchOperation_invalidScope() {
+		// ARRANGE
+		String randomScope = UUID.randomUUID().toString();
+		IBaseResource expectedPatient = patientResourceDao.create(new Patient()).getResource();
+		String id=expectedPatient.getIdElement().getIdPart();
+
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("patient", id);
+		claims.put("scope", randomScope);
+		mockJwtWithClaims(claims);
+
+		IQuery<IBaseBundle> patientSearchExecutable = client.search().forResource(Patient.class).withAdditionalHeader("Authorization", MOCK_HEADER);
+
+		// ACT
+		AuthenticationException authenticationException = assertThrows(AuthenticationException.class, patientSearchExecutable::execute);
+
+		// ASSERT
+		assertEquals(String.format("HTTP 401 : %s is not a valid clinical scope", randomScope), authenticationException.getMessage());
 	}
 
 	private static Stream<Arguments> getReadPatientClinicalScopes() {

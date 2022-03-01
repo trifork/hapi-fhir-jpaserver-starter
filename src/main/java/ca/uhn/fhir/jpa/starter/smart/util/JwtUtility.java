@@ -29,14 +29,17 @@ public class JwtUtility {
 	}
 
 	public static Set<SmartClinicalScope> getSmartScopes(Jwt token) {
-		Set<SmartClinicalScope> smartClinicalScopes = new HashSet<>();
-		String[] scopes = token.getClaimAsString("scope").split(" ");
+		try{
+			Set<SmartClinicalScope> smartClinicalScopes = new HashSet<>();
+			String[] scopes = token.getClaimAsString("scope").split(" ");
 
-		for (String scope : scopes) {
-			smartClinicalScopes.add(new SmartClinicalScope(scope));
+			for (String scope : scopes) {
+				smartClinicalScopes.add(new SmartClinicalScope(scope));
+			}
+			return smartClinicalScopes;
+		} catch (NullPointerException e){
+			throw new AuthenticationException("No scope provided");
 		}
-
-		return smartClinicalScopes;
 	}
 
 }

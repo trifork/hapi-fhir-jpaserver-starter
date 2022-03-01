@@ -7,6 +7,8 @@ import ca.uhn.fhir.jpa.starter.smart.model.SmartOperationEnum;
 import ca.uhn.fhir.jpa.starter.smart.security.builder.SmartAuthorizationRuleBuilder;
 import ca.uhn.fhir.jpa.starter.smart.util.JwtUtility;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
+import ca.uhn.fhir.rest.server.exceptions.AuthenticationException;
+import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
 import ca.uhn.fhir.rest.server.interceptor.auth.AuthorizedList;
 import ca.uhn.fhir.rest.server.interceptor.auth.IAuthRule;
 import ca.uhn.fhir.rest.server.interceptor.auth.RuleBuilder;
@@ -43,7 +45,7 @@ public class SmartSearchNarrowingInterceptor extends SearchNarrowingInterceptor 
 		AuthorizedList authorizedList = new AuthorizedList();
 
 		if (token == null) {
-			return authorizedList;
+			throw new ForbiddenOperationException("Token is required when performing a narrowing search operation");
 		}
 
 		try{
@@ -54,13 +56,17 @@ public class SmartSearchNarrowingInterceptor extends SearchNarrowingInterceptor 
 				String compartmentName = scope.getCompartment();
 				SmartOperationEnum operationEnum = scope.getOperation();
 				String id = (String) claims.get(compartmentName);
-				if (compartmentName != null && !compartmentName.isEmpty() &&
-					(operationEnum.equals(SmartOperationEnum.ALL) || operationEnum.equals(SmartOperationEnum.READ)) ) {
+				if (compartmentName != null && !compartmentName.isEmpty()) {
+					if(operationEnum.equals(SmartOperationEnum.WRITE)){
+						throw new ForbiddenOperationException("Read scope is required when performing a narrowing search operation");
+					}
 					authorizedList.addCompartment(String.format("%s/%s", compartmentName, id));
+				} else {
+					throw new AuthenticationException("Compartment is required when performing a narrowing search operation");
 				}
 			}
 		} catch (InvalidClinicalScopeException | InvalidSmartOperationException e) {
-			return authorizedList;
+			throw new AuthenticationException(e.getMessage());
 		}
 
 		return authorizedList;
