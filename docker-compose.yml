@@ -1,23 +1,26 @@
-version: "3"
+version: "3.6"
+
 services:
-  hapi-fhir-jpaserver-start:
-    build: .
-    container_name: hapi-fhir-jpaserver-start
-    restart: on-failure
+
+  fhir_db:
+    image: postgres:14
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: "hapi"
+      POSTGRES_PASSWORD: "hapi"
+      POSTGRES_DB: "hapi_r5"
+
+
+  fhir-server:
+    image: trifork/gravitate
     ports:
       - "8080:8080"
-  hapi-fhir-mysql:
-    image: mysql:latest
-    container_name: hapi-fhir-mysql
-    #https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
-    command: --lower_case_table_names=1
-    restart: always
+    depends_on:
+      - fhir_db
     environment:
-      MYSQL_DATABASE: 'hapi'
-      MYSQL_USER: 'admin'
-      MYSQL_PASSWORD: 'admin'
-      MYSQL_ROOT_PASSWORD: 'admin'
-    volumes:
-      - hapi-fhir-mysql:/var/lib/mysql
-volumes:
-  hapi-fhir-mysql:
+      - SPRING_CONFIG_LOCATION=https://raw.githubusercontent.com/trifork/hapi-fhir-jpaserver-starter/gravitate/src/main/resources/application.yaml
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://fhir_db:5432/hapi_r5
+      - SPRING_DATASOURCE_DRIVERCLASSNAME=org.postgresql.Driver
+      - SPRING_DATASOURCE_USERNAME=hapi
+      - SPRING_DATASOURCE_PASSWORD=hapi
