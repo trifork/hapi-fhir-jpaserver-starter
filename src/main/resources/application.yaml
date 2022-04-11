@@ -108,8 +108,7 @@ hapi:
     #    enable_index_missing_fields: false
     #    enable_index_contained_resource: false
     #    advanced_lucene_indexing: false
-    advanced_lucene_indexing: true
-#    enforce_referential_integrity_on_delete: false
+    #    enforce_referential_integrity_on_delete: false
     #    enforce_referential_integrity_on_write: false
     #    etag_support_enabled: true
     #    expunge_enabled: true
@@ -122,7 +121,6 @@ hapi:
     #    mdm_enabled: true
 #    local_base_urls:
 #      - https://hapi.fhir.org/baseR4
-    mdm_enabled: true
     #    partitioning:
     #      allow_references_across_partitions: false
     #      partitioning_include_in_search_hashes: false
