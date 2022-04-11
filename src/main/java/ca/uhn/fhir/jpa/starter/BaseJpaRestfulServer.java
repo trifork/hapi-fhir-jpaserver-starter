@@ -48,6 +48,7 @@ import ca.uhn.fhir.rest.server.interceptor.RequestValidatingInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.ResponseHighlighterInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.ResponseValidatingInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.partition.RequestTenantPartitionInterceptor;
+import ca.uhn.fhir.rest.server.provider.ReindexProvider;
 import ca.uhn.fhir.rest.server.provider.ResourceProviderFactory;
 import ca.uhn.fhir.rest.server.tenant.UrlBaseTenantIdentificationStrategy;
 import ca.uhn.fhir.rest.server.util.ISearchParamRegistry;
@@ -70,6 +71,7 @@ public class BaseJpaRestfulServer extends RestfulServer {
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(BaseJpaRestfulServer.class);
 
 	private static final long serialVersionUID = 1L;
+
 	@Autowired
 	DaoRegistry daoRegistry;
 	@Autowired
@@ -98,7 +100,10 @@ public class BaseJpaRestfulServer extends RestfulServer {
 	PartitionManagementProvider partitionManagementProvider;
 	@Autowired
 	ValueSetOperationProvider valueSetOperationProvider;
-	@Autowired BinaryStorageInterceptor binaryStorageInterceptor;
+	@Autowired
+	ReindexProvider reindexProvider;
+	@Autowired
+	BinaryStorageInterceptor binaryStorageInterceptor;
 	@Autowired
 	IPackageInstallerSvc packageInstallerSvc;
 	@Autowired
@@ -393,6 +398,9 @@ public class BaseJpaRestfulServer extends RestfulServer {
 
 		// valueSet Operations i.e $expand
     registerProvider(valueSetOperationProvider);
+
+	 //reindex Provider $reindex
+	 registerProvider(reindexProvider);
 
     // Partitioning
 		if (appProperties.getPartitioning() != null) {

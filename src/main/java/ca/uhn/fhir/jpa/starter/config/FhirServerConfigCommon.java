@@ -11,6 +11,7 @@ import ca.uhn.fhir.jpa.starter.AppProperties;
 import ca.uhn.fhir.jpa.subscription.channel.subscription.SubscriptionDeliveryHandlerFactory;
 import ca.uhn.fhir.jpa.subscription.match.deliver.email.EmailSenderImpl;
 import ca.uhn.fhir.jpa.subscription.match.deliver.email.IEmailSender;
+import ca.uhn.fhir.rest.server.mail.IMailSvc;
 import ca.uhn.fhir.rest.server.mail.MailConfig;
 import ca.uhn.fhir.rest.server.mail.MailSvc;
 import com.google.common.base.Strings;
@@ -39,6 +40,7 @@ public class FhirServerConfigCommon {
     ourLog.info("Server configured to " + (appProperties.getAllow_contains_searches() ? "allow" : "deny") + " contains searches");
     ourLog.info("Server configured to " + (appProperties.getAllow_multiple_delete() ? "allow" : "deny") + " multiple deletes");
     ourLog.info("Server configured to " + (appProperties.getAllow_external_references() ? "allow" : "deny") + " external references");
+    ourLog.info("Server configured to " + (appProperties.getDao_scheduling_enabled() ? "enable" : "disable") + " DAO scheduling");
     ourLog.info("Server configured to " + (appProperties.getDelete_expunge_enabled() ? "enable" : "disable") + " delete expunges");
     ourLog.info("Server configured to " + (appProperties.getExpunge_enabled() ? "enable" : "disable") + " expunges");
     ourLog.info("Server configured to " + (appProperties.getAllow_override_default_search_params() ? "allow" : "deny") + " overriding default search params");
@@ -85,6 +87,7 @@ public class FhirServerConfigCommon {
     retVal.setAllowContainsSearches(appProperties.getAllow_contains_searches());
     retVal.setAllowMultipleDelete(appProperties.getAllow_multiple_delete());
     retVal.setAllowExternalReferences(appProperties.getAllow_external_references());
+    retVal.setSchedulingDisabled(!appProperties.getDao_scheduling_enabled());
     retVal.setDeleteExpungeEnabled(appProperties.getDelete_expunge_enabled());
     retVal.setExpungeEnabled(appProperties.getExpunge_enabled());
     if(appProperties.getSubscription() != null && appProperties.getSubscription().getEmail() != null)
@@ -221,7 +224,8 @@ public class FhirServerConfigCommon {
       mailConfig.setSmtpPassword(email.getPassword());
       mailConfig.setSmtpUseStartTLS(email.getStartTlsEnable());
 
-		IEmailSender emailSender = new EmailSenderImpl(new MailSvc(mailConfig));
+		 IMailSvc mailSvc = new MailSvc(mailConfig);
+		 IEmailSender emailSender = new EmailSenderImpl(mailSvc);
 
 		subscriptionDeliveryHandlerFactory.ifPresent(theSubscriptionDeliveryHandlerFactory -> theSubscriptionDeliveryHandlerFactory.setEmailSender(emailSender));
 
