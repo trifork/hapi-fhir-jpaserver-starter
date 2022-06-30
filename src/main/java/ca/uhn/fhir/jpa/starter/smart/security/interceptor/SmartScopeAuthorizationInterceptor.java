@@ -8,7 +8,6 @@ import ca.uhn.fhir.jpa.starter.smart.util.JwtUtility;
 import ca.uhn.fhir.rest.api.RequestTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.interceptor.auth.*;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -46,7 +45,6 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 		if (token == null) {
 			return ruleList;
 		}
-
 
 		try {
 			Set<SmartClinicalScope> scopes = getSmartScopes(token);

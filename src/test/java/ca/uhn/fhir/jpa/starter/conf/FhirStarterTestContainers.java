@@ -1,10 +1,8 @@
 package ca.uhn.fhir.jpa.starter.conf;
 
 import org.jetbrains.annotations.NotNull;
-import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.PropertiesPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -13,6 +11,8 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Properties;
 
 public class FhirStarterTestContainers {
@@ -28,7 +28,8 @@ public class FhirStarterTestContainers {
 				.withExposedPorts(8080)
 				.withEnv("DB_ADDR", "postgres-db")
 				.withEnv("DB_PORT", "5432")
-				.waitingFor(Wait.forHttp("/auth"));
+				.waitingFor(Wait.forHttp("/auth"))
+				.withStartupTimeout(Duration.of(240, ChronoUnit.SECONDS));
 			keycloakContainer.start();
 		}
 		return keycloakContainer;

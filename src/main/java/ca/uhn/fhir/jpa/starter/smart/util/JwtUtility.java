@@ -3,6 +3,7 @@ package ca.uhn.fhir.jpa.starter.smart.util;
 import ca.uhn.fhir.jpa.starter.smart.model.SmartClinicalScope;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.exceptions.AuthenticationException;
+import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
@@ -38,7 +39,7 @@ public class JwtUtility {
 			}
 			return smartClinicalScopes;
 		} catch (NullPointerException e){
-			throw new AuthenticationException("No scope provided");
+			throw new ForbiddenOperationException("No scope provided");
 		}
 	}
 

@@ -145,7 +145,7 @@ class KeycloakSmartIT {
 
 	@Test
 	void addObservationAsPatient_patientHasPermissionToWrite() throws JSONException {
-		// ARRNAGE
+		// ARRANGE
 		Patient updatedResource = getPatient(PATIENT_ATTRIBUTE);
 
 		String jwt = getJwtToken("patient", "patient", "patient/*.write");

@@ -45,6 +45,11 @@ import static org.mockito.Mockito.when;
 @ActiveProfiles("smart")
 class AuthorizationInterceptorTest {
 
+	/**
+	 * <h1>BEWARE</h1>
+	 *
+	 * The test will fail if the boot maven profile is disabled so make sure they're run with said profile.
+	*/
 	public static final String ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny all requests that do not match any pre-defined rules";
 	public static final String ACCESS_DENIED_BY_RULE_DENY_ALL_REQUESTS_IF_NO_ID_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny ALL patient requests if no launch context is given!";
 	private IGenericClient client;
@@ -96,10 +101,10 @@ class AuthorizationInterceptorTest {
 	void testBuildRules_readPatient_noJwtTokenProvided() {
 		// ACT
 		IReadExecutable<IBaseResource> patientReadExecutable = client.read().resource("Patient").withId("123");
-		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
+		AuthenticationException authenticationException = assertThrows(AuthenticationException.class, patientReadExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : HAPI-0334: Access denied by default policy (no applicable rules)", forbiddenOperationException.getMessage());
+		assertEquals("HTTP 401 : Token is required when performing a narrowing search operation", authenticationException.getMessage());
 	}
 
 	@Test
@@ -117,7 +122,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
 
 		// ASSERT
-		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
+		assertEquals("HTTP 403 : Read scope is required when performing a narrowing search operation", forbiddenOperationException.getMessage());
 	}
 
 	@Test
@@ -154,7 +159,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : HAPI-0333: Access denied by rule: "+clinicalScope+" is not a valid clinical scope", forbiddenOperationException.getMessage());
+		assertEquals("HTTP 403 : "+clinicalScope+" is not a valid clinical scope", forbiddenOperationException.getMessage());
 	}
 
 	@Test
@@ -171,7 +176,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : HAPI-0333: Access denied by rule: unsupported is not a legal operation", forbiddenOperationException.getMessage());
+		assertEquals("HTTP 403 : unsupported is not a legal operation", forbiddenOperationException.getMessage());
 	}
 
 	@Test
@@ -848,10 +853,10 @@ class AuthorizationInterceptorTest {
 		IQuery<IBaseBundle> patientSearchExecutable = client.search().forResource(Patient.class).withAdditionalHeader("Authorization", MOCK_HEADER);
 
 		// ACT
-		AuthenticationException authenticationException = assertThrows(AuthenticationException.class, patientSearchExecutable::execute);
+		ForbiddenOperationException authenticationException = assertThrows(ForbiddenOperationException.class, patientSearchExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 401 : No scope provided", authenticationException.getMessage());
+		assertEquals("HTTP 403 : No scope provided", authenticationException.getMessage());
 	}
 
 	@Test
@@ -869,10 +874,10 @@ class AuthorizationInterceptorTest {
 		IQuery<IBaseBundle> patientSearchExecutable = client.search().forResource(Patient.class).withAdditionalHeader("Authorization", MOCK_HEADER);
 
 		// ACT
-		AuthenticationException authenticationException = assertThrows(AuthenticationException.class, patientSearchExecutable::execute);
+		ForbiddenOperationException authenticationException = assertThrows(ForbiddenOperationException.class, patientSearchExecutable::execute);
 
 		// ASSERT
-		assertEquals(String.format("HTTP 401 : %s is not a valid clinical scope", randomScope), authenticationException.getMessage());
+		assertEquals(String.format("HTTP 403 : %s is not a valid clinical scope", randomScope), authenticationException.getMessage());
 	}
 
 	private static Stream<Arguments> getReadPatientClinicalScopes() {
