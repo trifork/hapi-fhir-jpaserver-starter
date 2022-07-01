@@ -35,7 +35,10 @@ public class JwtUtility {
 			String[] scopes = token.getClaimAsString("scope").split(" ");
 
 			for (String scope : scopes) {
-				smartClinicalScopes.add(new SmartClinicalScope(scope));
+				SmartClinicalScope smartScope = SmartClinicalScope.createIfValidSmartClinicalScope(scope);
+				if( smartScope != null ) {
+					smartClinicalScopes.add(smartScope);
+				}
 			}
 			return smartClinicalScopes;
 		} catch (NullPointerException e){

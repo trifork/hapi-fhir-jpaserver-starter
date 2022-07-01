@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -146,42 +145,6 @@ class AuthorizationInterceptorTest {
 
 		// ASSERT
 		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
-	}
-
-	@ParameterizedTest
-	@ValueSource(strings = {"", "random/thing"})
-	void testBuildRules_readPatient_badScope(String clinicalScope) {
-		// ARRANGE
-		String mockId = "123";
-
-		HashMap<String, Object> claims = new HashMap<>();
-
-		claims.put("scope", clinicalScope);
-
-		mockJwtWithClaims(claims);
-		// ACT
-		IReadExecutable<IBaseResource> patientReadExecutable = client.read().resource("Patient").withId(mockId).withAdditionalHeader("Authorization", MOCK_HEADER);
-		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
-
-		// ASSERT
-		assertEquals("HTTP 403 : "+clinicalScope+" is not a valid clinical scope", forbiddenOperationException.getMessage());
-	}
-
-	@Test
-	void testBuildRules_readPatient_invalidClinicalScopeOperation() {
-		// ARRANGE
-		String mockId = "123";
-
-		HashMap<String, Object> claims = new HashMap<>();
-		claims.put("scope", "random/thing.unsupported");
-		mockJwtWithClaims(claims);
-
-		// ACT
-		IReadExecutable<IBaseResource> patientReadExecutable = client.read().resource("Patient").withId(mockId).withAdditionalHeader("Authorization", MOCK_HEADER);
-		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
-
-		// ASSERT
-		assertEquals("HTTP 403 : unsupported is not a legal operation", forbiddenOperationException.getMessage());
 	}
 
 	@Test
@@ -955,26 +918,25 @@ class AuthorizationInterceptorTest {
 		// ASSERT
 		assertEquals("HTTP 403 : No scope provided", authenticationException.getMessage());
 	}
-
-	@Test
-	void testBuildRules_searchOperation_invalidScope() {
+	
+	@ParameterizedTest
+	@MethodSource({"getWriteObservationUnknownScopes"})
+	void testBuildRules_createObservationOnPatient_providedJwtContainsWriteScopesAndPatientIdAndUnknownScopes(Map<String, Object> claims) {
 		// ARRANGE
-		String randomScope = UUID.randomUUID().toString();
-		IBaseResource expectedPatient = patientResourceDao.create(new Patient()).getResource();
-		String id=expectedPatient.getIdElement().getIdPart();
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
 
-		Map<String, Object> claims = new HashMap<>();
-		claims.put("patient", id);
-		claims.put("scope", randomScope);
+		claims.put("patient", mockId);
 		mockJwtWithClaims(claims);
 
-		IQuery<IBaseBundle> patientSearchExecutable = client.search().forResource(Patient.class).withAdditionalHeader("Authorization", MOCK_HEADER);
-
 		// ACT
-		ForbiddenOperationException authenticationException = assertThrows(ForbiddenOperationException.class, patientSearchExecutable::execute);
+		Observation observation = new Observation();
+		observation.setSubject(new Reference(mockPatient.getIdElement()));
+		ICreateTyped observationCreateExecutable = client.create().resource(observation).withAdditionalHeader("Authorization", MOCK_HEADER);
+		MethodOutcome outcome = observationCreateExecutable.execute();
 
 		// ASSERT
-		assertEquals(String.format("HTTP 403 : %s is not a valid clinical scope", randomScope), authenticationException.getMessage());
+		assertTrue(outcome.getCreated());
 	}
 
 	@Test
@@ -1136,6 +1098,20 @@ class AuthorizationInterceptorTest {
 						}}
 						)
 				);
+	}
+	
+	/**
+	 * 
+	 * @return return scopes unknown to SMART authorization which may be in the JWT token, such as launch/patient 
+	 */
+	private static Stream<Arguments> getWriteObservationUnknownScopes() {
+		return Stream.of(
+			Arguments.of(
+				new HashMap<String, String>() {{
+					put("scope", "launch/patient patient/Observation.*");
+				}}
+			)
+		);
 	}
 
 
