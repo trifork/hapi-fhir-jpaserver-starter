@@ -11,6 +11,7 @@ import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.*;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -253,11 +254,32 @@ class AuthorizationInterceptorTest {
 
 	@ParameterizedTest
 	@MethodSource("getReadPatientClinicalScopes")
-	void testBuildRules_readPatient_providedJwtContainsReadScopesButWrongPatientIdAsAdmin(Map<String, Object> claims) {
+	void testBuildRules_searchPatient_providedJwtContainsReadScopesButWrongPatientId(Map<String, Object> claims) {
+
 		// ARRANGE
 		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
 		String mockId = mockPatient.getIdElement().getIdPart();
 
+		claims.put("patient", "wrong");
+		mockJwtWithClaims(claims);
+
+		IQuery<IBaseBundle> patientReadExecutable = client.search().forResource(Patient.class)
+				.where(Patient.RES_ID.exactly().code(mockId)).withAdditionalHeader("Authorization", MOCK_HEADER);
+
+		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class,
+				patientReadExecutable::execute);
+
+		// ASSERT
+		Assertions.assertTrue(forbiddenOperationException.getMessage().contains("HTTP 403"));
+	}
+
+	@ParameterizedTest
+	@MethodSource("getReadPatientClinicalScopes")
+	void testBuildRules_readPatient_providedJwtContainsReadScopesButWrongPatientIdAsAdmin(Map<String, Object> claims) {
+
+		// ARRANGE
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
 
 		claims.put("patient", "wrong");
 		claims.put("group", smartAdminGroupClaim);
@@ -272,7 +294,6 @@ class AuthorizationInterceptorTest {
 		// ASSERT
 		assertEquals(mockId, actualPatient.getIdElement().getIdPart());
 	}
-
 
 	@ParameterizedTest
 	@MethodSource({"getAllPatientClinicalScopes", "getWriteObservationClinicalScopes"})
@@ -869,6 +890,31 @@ class AuthorizationInterceptorTest {
 		assertEquals(searchBundle.getEntry().get(0).getResource().getIdElement().getIdPart(), id);
 	}
 
+	@ParameterizedTest
+	@MethodSource({ "getReadPatientClinicalScopes" })
+	void testBuildRules_searchOperation_providedJwtContainsReadScope_multiplePatients(Map<String, Object> claims) {
+		// ARRANGE
+
+		IBaseResource expectedPatient = patientResourceDao.create(new Patient()).getResource();
+		String id = expectedPatient.getIdElement().getIdPart();
+
+		// add a second patient to make sure the narrowing interceptor works
+		patientResourceDao.create(new Patient());
+
+		claims.put("patient", id);
+		mockJwtWithClaims(claims);
+
+		IQuery<IBaseBundle> patientSearchExecutable = client.search().forResource(Patient.class)
+				.withAdditionalHeader("Authorization", MOCK_HEADER);
+
+		// ACT
+		Bundle searchBundle = (Bundle) patientSearchExecutable.execute();
+
+		// ASSERT
+		assertEquals(1, searchBundle.getEntry().size());
+		assertEquals(searchBundle.getEntry().get(0).getResource().getIdElement().getIdPart(), id);
+	}
+
 	@Test
 	void testBuildRules_searchOperation_providedJwtContainsWriteScope() {
 		// ARRANGE
@@ -929,6 +975,65 @@ class AuthorizationInterceptorTest {
 
 		// ASSERT
 		assertEquals(String.format("HTTP 403 : %s is not a valid clinical scope", randomScope), authenticationException.getMessage());
+	}
+
+	@Test
+	void testBuildRules_searchRecords_wrongPatient_providedJwtContainsReadScopesAndPatientId() {
+
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("scope", "patient/*.read");
+
+		// create a patient
+		IBaseResource patient = patientResourceDao.create(new Patient()).getResource();
+		String patId = patient.getIdElement().getIdPart();
+
+		// create an observation for the patient
+		IBaseResource observation = observationResourceDao
+				.create(new Observation().setSubject(new Reference(patient.getIdElement()))).getResource();
+		String obsId = observation.getIdElement().getIdPart();
+
+		// get a claim for a different patient ID
+		claims.put("patient", "wrong");
+		// claims.put("patient", patId);
+		mockJwtWithClaims(claims);
+
+		ForbiddenOperationException exception = Assertions.assertThrows(ForbiddenOperationException.class, () -> {
+			// search for our Observation /Observation?subject=Patient/xxx
+			// we should not be able to see these records
+			Bundle searchBundle = client.search().forResource(Observation.class)
+					.where(Observation.SUBJECT.hasId("Patient/" + patId)).returnBundle(Bundle.class)
+					.withAdditionalHeader("Authorization", MOCK_HEADER).execute();
+		});
+
+		Assertions.assertTrue(exception.getMessage().contains("HTTP 403"));
+	}
+
+	@Test
+	void testBuildRules_searchRecords_correctPatient_providedJwtContainsReadScopesAndPatientId() {
+
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("scope", "patient/*.read");
+
+		// create a patient
+		IBaseResource patient = patientResourceDao.create(new Patient()).getResource();
+		String patId = patient.getIdElement().getIdPart();
+
+		// create an observation for the patient
+		IBaseResource observation = observationResourceDao
+				.create(new Observation().setSubject(new Reference(patient.getIdElement()))).getResource();
+		String obsId = observation.getIdElement().getIdPart();
+
+		claims.put("patient", patId);
+		mockJwtWithClaims(claims);
+
+		// search for our Observation /Observation?subject=Patient/xxx
+		// we should not be able to see these records
+		Bundle searchBundle = client.search().forResource(Observation.class)
+				.where(Observation.SUBJECT.hasId("Patient/" + patId)).returnBundle(Bundle.class)
+				.withAdditionalHeader("Authorization", MOCK_HEADER).execute();
+
+		assertEquals(1, searchBundle.getEntry().size());
+		assertEquals(searchBundle.getEntry().get(0).getResource().getIdElement().getIdPart(), obsId);
 	}
 
 	private static Stream<Arguments> getReadPatientClinicalScopes() {

@@ -56,6 +56,15 @@ public class SmartSearchNarrowingInterceptor extends SearchNarrowingInterceptor 
 						if (operationEnum.equals(SmartOperationEnum.WRITE)) {
 							throw new ForbiddenOperationException("Read scope is required when performing a narrowing search operation");
 						}
+
+						// the compartment names are coming from the scopes and are lower-case.
+						// need them to match resource names for the search narrowing interceptor to work
+						if ("patient".equals(compartmentName)) {
+							compartmentName = "Patient";
+						} else if ("user".equals(compartmentName)) {
+							compartmentName = "Practitioner";
+						}
+
 						authorizedList.addCompartment(String.format("%s/%s", compartmentName, id));
 					} else {
 						throw new AuthenticationException("Compartment is required when performing a narrowing search operation");
