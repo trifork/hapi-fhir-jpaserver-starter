@@ -66,7 +66,10 @@ hapi:
     ### This enables the swagger-ui at /fhir/swagger-ui/index.html as well as the /fhir/api-docs (see https://hapifhir.io/hapi-fhir/docs/server_plain/openapi.html)
     openapi_enabled: true
     ### Enables the default implementation of SMART (http://www.hl7.org/fhir/smart-app-launch/scopes-and-launch-context/index.html), requires JWT signature validation implementation (spring.security.oauth2.resourceserver.jwt)
-    # smart_enabled: true
+    smart_enabled: true
+    ### enable smart admin users to bypass smart scope checks, this will look for a claim of "group" with "fhirAdmin" value
+    smart_admin_group_enabled: false
+    smart_admin_group_claim: fhirAdmin
     ### This is the FHIR version. Choose between, DSTU2, DSTU3, R4 or R5
     fhir_version: R4
     ### enable to use the ApacheProxyAddressStrategy which uses X-Forwarded-* headers
