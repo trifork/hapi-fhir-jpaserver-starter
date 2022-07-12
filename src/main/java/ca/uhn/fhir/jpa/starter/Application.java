@@ -11,6 +11,7 @@ import ca.uhn.fhir.jpa.subscription.match.config.SubscriptionProcessorConfig;
 import ca.uhn.fhir.jpa.subscription.match.config.WebsocketDispatcherConfig;
 import ca.uhn.fhir.jpa.subscription.submit.config.SubscriptionSubmitterConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -26,7 +27,7 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
 import org.springframework.web.servlet.DispatcherServlet;
 
 @ServletComponentScan(basePackageClasses = {
-  JpaRestfulServer.class})
+		JpaRestfulServer.class})
 @SpringBootApplication(exclude = {ElasticsearchRestClientAutoConfiguration.class})
 @Import({ SubscriptionSubmitterConfig.class, SubscriptionProcessorConfig.class, SubscriptionChannelConfig.class, WebsocketDispatcherConfig.class, MdmConfig.class,
 	JpaBatch2Config.class,
@@ -34,70 +35,76 @@ import org.springframework.web.servlet.DispatcherServlet;
 })
 public class Application extends SpringBootServletInitializer {
 
-  public static void main(String[] args) {
+	// default to /fhir/*
+	@Value("${hapi.fhir.fhir_servlet_base_url_mapping:/fhir/*}")
+	String fhirServletBaseUrlMapping;
 
-    SpringApplication.run(Application.class, args);
+	@Value("${hapi.fhir.fhir_servlet_wellknown_url_mapping:/fhir/.well-known/*}")
+	String wellKnownServletUrlMapping;
 
-    //Server is now accessible at eg. http://localhost:8080/fhir/metadata
-    //UI is now accessible at http://localhost:8080/
-  }
+	public static void main(String[] args) {
 
-  @Override
-  protected SpringApplicationBuilder configure(
-    SpringApplicationBuilder builder) {
-    return builder.sources(Application.class);
-  }
+		SpringApplication.run(Application.class, args);
 
-  @Autowired
-  AutowireCapableBeanFactory beanFactory;
+		//Server is now accessible at eg. http://localhost:8080/fhir/metadata
+		//UI is now accessible at http://localhost:8080/
+	}
 
-  @Bean
-  @Conditional(OnEitherVersion.class)
-  public ServletRegistrationBean hapiServletRegistration() {
-    ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
-    JpaRestfulServer jpaRestfulServer = new JpaRestfulServer();
-    beanFactory.autowireBean(jpaRestfulServer);
-    servletRegistrationBean.setServlet(jpaRestfulServer);
-    servletRegistrationBean.addUrlMappings("/fhir/*");
-    servletRegistrationBean.setLoadOnStartup(1);
+	@Override
+	protected SpringApplicationBuilder configure(
+			SpringApplicationBuilder builder) {
+		return builder.sources(Application.class);
+	}
 
-    return servletRegistrationBean;
-  }
+	@Autowired
+	AutowireCapableBeanFactory beanFactory;
 
-  @Bean
-  public ServletRegistrationBean overlayRegistrationBean() {
+	@Bean
+	@Conditional(OnEitherVersion.class)
+	public ServletRegistrationBean hapiServletRegistration() {
+		ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
+		JpaRestfulServer jpaRestfulServer = new JpaRestfulServer();
+		beanFactory.autowireBean(jpaRestfulServer);
+		servletRegistrationBean.setServlet(jpaRestfulServer);
+		servletRegistrationBean.addUrlMappings(fhirServletBaseUrlMapping);
+		servletRegistrationBean.setLoadOnStartup(1);
 
-    AnnotationConfigWebApplicationContext annotationConfigWebApplicationContext = new AnnotationConfigWebApplicationContext();
-    annotationConfigWebApplicationContext.register(FhirTesterConfig.class);
+		return servletRegistrationBean;
+	}
 
-    DispatcherServlet dispatcherServlet = new DispatcherServlet(
-      annotationConfigWebApplicationContext);
-    dispatcherServlet.setContextClass(AnnotationConfigWebApplicationContext.class);
-    dispatcherServlet.setContextConfigLocation(FhirTesterConfig.class.getName());
+	@Bean
+	public ServletRegistrationBean overlayRegistrationBean() {
 
-    ServletRegistrationBean registrationBean = new ServletRegistrationBean();
-    registrationBean.setServlet(dispatcherServlet);
-    registrationBean.addUrlMappings("/*");
-    registrationBean.setLoadOnStartup(1);
-    return registrationBean;
+		AnnotationConfigWebApplicationContext annotationConfigWebApplicationContext = new AnnotationConfigWebApplicationContext();
+		annotationConfigWebApplicationContext.register(FhirTesterConfig.class);
 
-  }
+		DispatcherServlet dispatcherServlet = new DispatcherServlet(
+				annotationConfigWebApplicationContext);
+		dispatcherServlet.setContextClass(AnnotationConfigWebApplicationContext.class);
+		dispatcherServlet.setContextConfigLocation(FhirTesterConfig.class.getName());
+
+		ServletRegistrationBean registrationBean = new ServletRegistrationBean();
+		registrationBean.setServlet(dispatcherServlet);
+		registrationBean.addUrlMappings("/*");
+		registrationBean.setLoadOnStartup(1);
+		return registrationBean;
+
+	}
 
 	@Bean
 	public ServletRegistrationBean wellknownRegistrationBean() {
 
 		AnnotationConfigWebApplicationContext annotationConfigWebApplicationContext = new AnnotationConfigWebApplicationContext();
 		DispatcherServlet dispatcherServlet = new DispatcherServlet(
-			annotationConfigWebApplicationContext);
+				annotationConfigWebApplicationContext);
 		dispatcherServlet.setContextClass(AnnotationConfigWebApplicationContext.class);
 		dispatcherServlet.setContextConfigLocation(WellKnownEndpointController.class.getName());
 
 		ServletRegistrationBean registrationBean = new ServletRegistrationBean();
 		registrationBean.setName("wellknown");
 		registrationBean.setServlet(dispatcherServlet);
-		registrationBean.addUrlMappings("/.well-known/*");
+		registrationBean.addUrlMappings(wellKnownServletUrlMapping);
 		registrationBean.setLoadOnStartup(1);
 		return registrationBean;
-
 	}
 }
