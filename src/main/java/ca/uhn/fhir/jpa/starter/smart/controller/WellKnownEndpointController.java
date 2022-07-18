@@ -35,7 +35,7 @@ public class WellKnownEndpointController {
 
 	@Value("${smart.wellknown.token_endpoint_auth_methods_supported}")
 	@SerializedName("token_endpoint_auth_methods_supported")
-	public String tokenEndpointAuthMethodsSupported;
+	public String[] tokenEndpointAuthMethodsSupported;
 
 	@Value("${smart.wellknown.registration_endpoint}")
 	@SerializedName("registration_endpoint")
