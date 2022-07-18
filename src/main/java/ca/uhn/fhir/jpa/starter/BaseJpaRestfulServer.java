@@ -21,6 +21,7 @@ import ca.uhn.fhir.jpa.provider.*;
 import ca.uhn.fhir.jpa.provider.dstu3.JpaConformanceProviderDstu3;
 import ca.uhn.fhir.jpa.search.DatabaseBackedPagingProvider;
 import ca.uhn.fhir.jpa.starter.smart.security.interceptor.SmartScopeAuthorizationInterceptor;
+import ca.uhn.fhir.jpa.starter.smart.SmartCapabilityStatementInterceptorR4;
 import ca.uhn.fhir.jpa.starter.smart.security.builder.CompartmentAuthorizationRuleBuilder;
 import ca.uhn.fhir.jpa.starter.smart.security.builder.SmartAuthorizationRuleBuilder;
 import ca.uhn.fhir.jpa.starter.smart.security.interceptor.SmartSearchNarrowingInterceptor;
@@ -49,13 +50,10 @@ import javax.servlet.ServletException;
 
 import org.hl7.fhir.r4.model.Bundle.BundleType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.cors.CorsConfiguration;
-
-import javax.servlet.ServletException;
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class BaseJpaRestfulServer extends RestfulServer {
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(BaseJpaRestfulServer.class);
@@ -76,8 +74,8 @@ public class BaseJpaRestfulServer extends RestfulServer {
 	IJpaSystemProvider jpaSystemProvider;
 	@Autowired
 	ValueSetOperationProvider myValueSetOperationProvider;
-  	@Autowired
-   IInterceptorBroadcaster interceptorBroadcaster;
+	@Autowired
+	IInterceptorBroadcaster interceptorBroadcaster;
 	@Autowired
 	DatabaseBackedPagingProvider databaseBackedPagingProvider;
 	@Autowired
@@ -118,6 +116,21 @@ public class BaseJpaRestfulServer extends RestfulServer {
 	@Autowired
 	Optional<CompartmentAuthorizationRuleBuilder> compartmentAuthorizationRuleBuilder;
 
+	@Value("${smart.wellknown.authorization_endpoint}")
+	public String authorizationEndpoint;
+
+	@Value("${smart.wellknown.token_endpoint}")
+	public String tokenEndpoint;
+
+	@Value("${smart.wellknown.management_endpoint}")
+	public String managementEndpoint;
+
+	@Value("${smart.wellknown.introspection_endpoint}")
+	public String introspectionEndpoint;
+
+	@Value("${smart.wellknown.revocation_endpoint}")
+	public String revocationEndpoint;
+
 	@Autowired
 	private IValidationSupport myValidationSupport;
 
@@ -137,8 +150,8 @@ public class BaseJpaRestfulServer extends RestfulServer {
 		List<String> supportedResourceTypes = appProperties.getSupported_resource_types();
 
 		if (!supportedResourceTypes.isEmpty() ) {
-      if ( !supportedResourceTypes.contains("SearchParameter")) {
-			supportedResourceTypes.add("SearchParameter");}
+			if ( !supportedResourceTypes.contains("SearchParameter")) {
+				supportedResourceTypes.add("SearchParameter");}
 			daoRegistry.setSupportedResourceTypes(supportedResourceTypes);
 		}
 
@@ -153,7 +166,7 @@ public class BaseJpaRestfulServer extends RestfulServer {
 
 		registerProviders(resourceProviderFactory.createProviders());
 		registerProvider(jpaSystemProvider);
-/*
+		/*
 
 		 * The conformance provider exports the supported resources, search parameters, etc for
 		 * this server. The JPA version adds resourceProviders counts to the exported statement, so it
@@ -167,26 +180,30 @@ public class BaseJpaRestfulServer extends RestfulServer {
 		if (fhirVersion == FhirVersionEnum.DSTU2) {
 
 			JpaConformanceProviderDstu2 confProvider = new JpaConformanceProviderDstu2(this, fhirSystemDao,
-				daoConfig);
+					daoConfig);
 			confProvider.setImplementationDescription("HAPI FHIR DSTU2 Server");
 			setServerConformanceProvider(confProvider);
 		} else {
 			if (fhirVersion == FhirVersionEnum.DSTU3) {
 
 				JpaConformanceProviderDstu3 confProvider = new JpaConformanceProviderDstu3(this, fhirSystemDao,
-					daoConfig, searchParamRegistry);
+						daoConfig, searchParamRegistry);
 				confProvider.setImplementationDescription("HAPI FHIR DSTU3 Server");
 				setServerConformanceProvider(confProvider);
 			} else if (fhirVersion == FhirVersionEnum.R4) {
 
 				JpaCapabilityStatementProvider confProvider = new JpaCapabilityStatementProvider(this, fhirSystemDao,
-					daoConfig, searchParamRegistry, myValidationSupport);
+						daoConfig, searchParamRegistry, myValidationSupport);
 				confProvider.setImplementationDescription("HAPI FHIR R4 Server");
 				setServerConformanceProvider(confProvider);
+
+				// register an interceptor to add the
+				registerInterceptor(new SmartCapabilityStatementInterceptorR4(authorizationEndpoint, tokenEndpoint, managementEndpoint, introspectionEndpoint, revocationEndpoint));
+
 			} else if (fhirVersion == FhirVersionEnum.R5) {
 
 				JpaCapabilityStatementProvider confProvider = new JpaCapabilityStatementProvider(this, fhirSystemDao,
-					daoConfig, searchParamRegistry, myValidationSupport);
+						daoConfig, searchParamRegistry, myValidationSupport);
 				confProvider.setImplementationDescription("HAPI FHIR R5 Server");
 				setServerConformanceProvider(confProvider);
 			} else {
@@ -207,9 +224,9 @@ public class BaseJpaRestfulServer extends RestfulServer {
 		 */
 		FhirContext ctx = getFhirContext();
 		INarrativeGenerator theNarrativeGenerator =
-			appProperties.getNarrative_enabled() ?
-				new DefaultThymeleafNarrativeGenerator() :
-				new NullNarrativeGenerator();
+				appProperties.getNarrative_enabled() ?
+						new DefaultThymeleafNarrativeGenerator() :
+							new NullNarrativeGenerator();
 		ctx.setNarrativeGenerator(theNarrativeGenerator);
 
 		/*
@@ -309,7 +326,7 @@ public class BaseJpaRestfulServer extends RestfulServer {
 			config.addExposedHeader("Location");
 			config.addExposedHeader("Content-Location");
 			config.setAllowedMethods(
-				Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
+					Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
 			config.setAllowCredentials(appProperties.getCors().getAllow_Credentials());
 
 			// Create the interceptor and register it
@@ -335,7 +352,7 @@ public class BaseJpaRestfulServer extends RestfulServer {
 
 		if (appProperties.getAllow_cascading_deletes()) {
 			CascadingDeleteInterceptor cascadingDeleteInterceptor = new CascadingDeleteInterceptor(ctx,
-				daoRegistry, interceptorBroadcaster);
+					daoRegistry, interceptorBroadcaster);
 			getInterceptorService().registerInterceptor(cascadingDeleteInterceptor);
 		}
 
@@ -377,8 +394,8 @@ public class BaseJpaRestfulServer extends RestfulServer {
 		daoConfig.setDeferIndexingForCodesystemsOfSize(appProperties.getDefer_indexing_for_codesystems_of_size());
 
 		if (appProperties.getOpenapi_enabled()) {
-		registerInterceptor(new OpenApiInterceptor());
-	}// Bulk Export
+			registerInterceptor(new OpenApiInterceptor());
+		}// Bulk Export
 		if (appProperties.getBulk_export_enabled()) {
 			registerProvider(bulkDataExportProvider);
 		}
@@ -389,12 +406,12 @@ public class BaseJpaRestfulServer extends RestfulServer {
 
 
 		// valueSet Operations i.e $expand
-	 registerProvider(myValueSetOperationProvider);
+		registerProvider(myValueSetOperationProvider);
 
-	 //reindex Provider $reindex
-	 registerProvider(reindexProvider);
+		//reindex Provider $reindex
+		registerProvider(reindexProvider);
 
-    // Partitioning
+		// Partitioning
 		if (appProperties.getPartitioning() != null) {
 			registerInterceptor(new RequestTenantPartitionInterceptor());
 			setTenantIdentificationStrategy(new UrlBaseTenantIdentificationStrategy());
@@ -405,18 +422,18 @@ public class BaseJpaRestfulServer extends RestfulServer {
 			daoConfig.setResourceServerIdStrategy(DaoConfig.IdStrategyEnum.UUID);
 			daoConfig.setResourceClientIdStrategy(appProperties.getClient_id_strategy());
 		}
-    //Parallel Batch GET execution settings
-  	 daoConfig.setBundleBatchPoolSize(appProperties.getBundle_batch_pool_size());
-  	 daoConfig.setBundleBatchPoolSize(appProperties.getBundle_batch_pool_max_size());
+		//Parallel Batch GET execution settings
+		daoConfig.setBundleBatchPoolSize(appProperties.getBundle_batch_pool_size());
+		daoConfig.setBundleBatchPoolSize(appProperties.getBundle_batch_pool_max_size());
 
 		if (appProperties.getImplementationGuides() != null) {
 			Map<String, AppProperties.ImplementationGuide> guides = appProperties.getImplementationGuides();
 			for (Map.Entry<String, AppProperties.ImplementationGuide> guide : guides.entrySet()) {
 				PackageInstallationSpec packageInstallationSpec = new PackageInstallationSpec()
-					.setPackageUrl(guide.getValue().getUrl())
-					.setName(guide.getValue().getName())
-					.setVersion(guide.getValue().getVersion())
-					.setInstallMode(PackageInstallationSpec.InstallModeEnum.STORE_AND_INSTALL);
+						.setPackageUrl(guide.getValue().getUrl())
+						.setName(guide.getValue().getName())
+						.setVersion(guide.getValue().getVersion())
+						.setInstallMode(PackageInstallationSpec.InstallModeEnum.STORE_AND_INSTALL);
 				if (appProperties.getInstall_transitive_ig_dependencies()) {
 					packageInstallationSpec.setFetchDependencies(true);
 					packageInstallationSpec.setDependencyExcludes(ImmutableList.of("hl7.fhir.r2.core", "hl7.fhir.r3.core", "hl7.fhir.r4.core", "hl7.fhir.r5.core"));
@@ -437,6 +454,7 @@ public class BaseJpaRestfulServer extends RestfulServer {
 		daoConfig.setStoreResourceInLuceneIndex(appProperties.getStore_resource_in_lucene_index_enabled());daoConfig.getModelConfig().setNormalizedQuantitySearchLevel(appProperties.getNormalized_quantity_search_level());
 
 		daoConfig.getModelConfig().setIndexOnContainedResources(appProperties.getEnable_index_contained_resource());
+
 	}
 
 }
