@@ -68,5 +68,5 @@ smart:
     management_endpoint: 
     introspection_endpoint : 
     revocation_endpoint : 
-    capabilities: launch-standalone
+    capabilities: launch-standalone, client-public, client-confidential-symmetric, context-standalone-patient, permission-patient
     code_challenge_methods_supported: S256
