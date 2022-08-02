@@ -1,3 +1,9 @@
+#base context path
+# note: fhir_servlet_base_url_mapping property will be appended to this base context path to create the server base URL
+server: 
+  servlet: 
+    context-path : /
+
 #Adds the option to go to eg. http://localhost:8080/actuator/health for seeing the running configuration
 #see https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html#actuator.endpoints
 management:
@@ -63,6 +69,8 @@ spring:
       enabled: false
 hapi:
   fhir:
+    fhir_servlet_base_url_mapping : "/fhir/*"
+    fhir_servlet_wellknown_url_mapping : "/fhir/.well-known/*"
     ### This enables the swagger-ui at /fhir/swagger-ui/index.html as well as the /fhir/api-docs (see https://hapifhir.io/hapi-fhir/docs/server_plain/openapi.html)
     openapi_enabled: true
     ### Enables the default implementation of SMART (http://www.hl7.org/fhir/smart-app-launch/scopes-and-launch-context/index.html), requires JWT signature validation implementation (spring.security.oauth2.resourceserver.jwt)
@@ -212,3 +220,23 @@ hapi:
 #  protocol: 'http'
 #  schema_management_strategy: CREATE
 #  username: SomeUsername
+
+# see https://hl7.org/fhir/smart-app-launch/conformance.html#response
+smart: 
+  wellknown: 
+    issuer: 
+    jwks_uri: 
+    authorization_endpoint: 
+    grant_types_supported: 
+    token_endpoint: 
+    token_endpoint_auth_methods_supported: 
+    registration_endpoint: 
+    scopes_supported: 
+    response_types_supported: 
+    management_endpoint: 
+    introspection_endpoint : 
+    revocation_endpoint : 
+    capabilities: 
+    code_challenge_methods_supported: 
+    
+    
