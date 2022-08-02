@@ -18,16 +18,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
@@ -45,11 +44,13 @@ import static org.mockito.Mockito.when;
 @ActiveProfiles("smart")
 class AuthorizationInterceptorTest {
 
+	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(AuthorizationInterceptorTest.class);
+
 	/**
 	 * <h1>BEWARE</h1>
 	 *
 	 * The test will fail if the boot maven profile is disabled so make sure they're run with said profile.
-	*/
+	 */
 	public static final String ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny all requests that do not match any pre-defined rules";
 	public static final String ACCESS_DENIED_BY_RULE_DENY_ALL_REQUESTS_IF_NO_ID_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny ALL patient requests if no launch context is given!";
 	private IGenericClient client;
@@ -64,11 +65,14 @@ class AuthorizationInterceptorTest {
 	@Autowired
 	private IFhirResourceDao<Observation> observationResourceDao;
 
-	@Autowired
+	@Autowired 
 	private IFhirResourceDao<Practitioner> practitionerResourceDao;
 
 	@LocalServerPort
 	private int port;
+
+	@Value("${hapi.fhir.smart_admin_group_claim}")
+	private String smartAdminGroupClaim;
 
 	private static final String MOCK_JWT = "FAKE_TOKEN";
 	private static final String MOCK_HEADER = "Bearer " + MOCK_JWT;
@@ -247,6 +251,28 @@ class AuthorizationInterceptorTest {
 		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
 	}
 
+	@ParameterizedTest
+	@MethodSource("getReadPatientClinicalScopes")
+	void testBuildRules_readPatient_providedJwtContainsReadScopesButWrongPatientIdAsAdmin(Map<String, Object> claims) {
+		// ARRANGE
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
+
+
+		claims.put("patient", "wrong");
+		claims.put("group", smartAdminGroupClaim);
+
+		mockJwtWithClaims(claims);
+
+		// ACT
+		IReadExecutable<IBaseResource> patientReadExecutable = client.read().resource("Patient").withId(mockId)
+				.withAdditionalHeader("Authorization", MOCK_HEADER);
+		IBaseResource actualPatient = patientReadExecutable.execute();
+
+		// ASSERT
+		assertEquals(mockId, actualPatient.getIdElement().getIdPart());
+	}
+
 
 	@ParameterizedTest
 	@MethodSource({"getAllPatientClinicalScopes", "getWriteObservationClinicalScopes"})
@@ -288,6 +314,31 @@ class AuthorizationInterceptorTest {
 		// ASSERT
 		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
 	}
+
+	@ParameterizedTest
+	@MethodSource("getWritePatientClinicalScopes")
+	void testBuildRules_createObservationOnPatient_providedJwtContainsWriteScopesButWrongPatientIdAsAdmin(Map<String, Object> claims) {
+		// ARRANGE
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
+
+		claims.put("patient", mockId);
+		claims.put("group", smartAdminGroupClaim);
+
+		ourLog.trace("smartAdminGroupClaim->{}", smartAdminGroupClaim);
+
+		mockJwtWithClaims(claims);
+
+		// ACT
+		Observation observation = new Observation();
+		observation.setSubject(new Reference(mockPatient.getIdElement()));
+		ICreateTyped observationCreateExecutable = client.create().resource(observation).withAdditionalHeader("Authorization", MOCK_HEADER);
+		MethodOutcome outcome = observationCreateExecutable.execute();
+
+		// ASSERT
+		assertTrue(outcome.getCreated());
+	}
+
 
 	@ParameterizedTest
 	@MethodSource({"getWritePatientClinicalScopes"})
@@ -882,104 +933,104 @@ class AuthorizationInterceptorTest {
 
 	private static Stream<Arguments> getReadPatientClinicalScopes() {
 		return Stream.of(
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "patient/*.read");
-				}}
-			),
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "patient/Patient.read");
-				}}
-			)
-		);
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/*.read");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Patient.read");
+						}}
+						)
+				);
 	}
 
 
 	private static Stream<Arguments> getAllPatientClinicalScopes() {
 		return Stream.of(
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "patient/*.*");
-				}}
-			),
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "patient/*.write");
-				}}
-			)
-		);
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/*.*");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/*.write");
+						}}
+						)
+				);
 	}
 
 	private static Stream<Arguments> getWritePatientClinicalScopes() {
 		return Stream.of(
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "patient/Patient.*");
-				}}
-			),
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "patient/Patient.write");
-				}}
-			)
-		);
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Patient.*");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Patient.write");
+						}}
+						)
+				);
 	}
 
 	private static Stream<Arguments> getWriteObservationClinicalScopes() {
 		return Stream.of(
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "patient/Observation.*");
-				}}
-			),
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "patient/Observation.write");
-				}}
-			)
-		);
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Observation.*");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Observation.write");
+						}}
+						)
+				);
 	}
 
 	private static Stream<Arguments> getReadPractitionerClinicalScopes() {
 		return Stream.of(
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "user/*.read");
-				}}
-			),
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "user/Patient.read");
-				}}
-			),
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "user/*.*");
-				}}
-			)
-		);
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/*.read");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/Patient.read");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/*.*");
+						}}
+						)
+				);
 	}
 
 	private static Stream<Arguments> getWritePractitionerClinicalScopes() {
 		return Stream.of(
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "user/*.write");
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/*.write");
 
-				}}
-			),
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "user/Patient.write");
-				}}
-			),
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "user/*.*");
-				}}
-			)
-		);
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/Patient.write");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/*.*");
+						}}
+						)
+				);
 	}
 
 

@@ -30,6 +30,8 @@ hapi:
   fhir:
     openapi_enabled: true
     smart_enabled: true
+    smart_admin_group_enabled: true
+    smart_admin_group_claim: fhirAdmin
     fhir_version: R4
     allow_cascading_deletes: true
     cors:

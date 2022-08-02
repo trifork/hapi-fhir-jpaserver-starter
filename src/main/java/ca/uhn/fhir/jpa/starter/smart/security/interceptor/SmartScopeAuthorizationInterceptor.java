@@ -8,11 +8,11 @@ import ca.uhn.fhir.jpa.starter.smart.util.JwtUtility;
 import ca.uhn.fhir.rest.api.RequestTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.interceptor.auth.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +28,12 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 	public static final String RULE_DENY_ALL_UNKNOWN_REQUESTS = "Deny all requests that do not match any pre-defined rules";
 
 	private final JwtDecoder jwtDecoder;
-
+	
+	@Value("${hapi.fhir.smart_admin_group_enabled}")
+	private boolean smartAdminAccessEnabled;
+	
+	@Value("${hapi.fhir.smart_admin_group_claim}")
+	private String smartAdminGroupClaim;
 
 	public SmartScopeAuthorizationInterceptor(List<SmartAuthorizationRuleBuilder> ruleBuilders, JwtDecoder jwtDecoder) {
 		this.setFlags(AuthorizationFlagsEnum.DO_NOT_PROACTIVELY_BLOCK_COMPARTMENT_READ_ACCESS);
@@ -45,7 +50,22 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 		if (token == null) {
 			return ruleList;
 		}
-
+		
+		// Check if admin user
+		if( smartAdminAccessEnabled && smartAdminGroupClaim != null ) {
+			
+			List<String> groups = token.getClaimAsStringList("group");
+			if( groups != null ) {
+				for( String group : groups ) {
+					if ( smartAdminGroupClaim.equals(group) ) {
+						ruleList.addAll(authRuleBuilder.allowAll().build());
+						//can short-circuit here since we are returning a rule with unrestricted access
+						return ruleList;
+					}
+				}
+			}
+		}
+		
 		try {
 			Set<SmartClinicalScope> scopes = getSmartScopes(token);
 			Map<String, Object> claims = token.getClaims();
