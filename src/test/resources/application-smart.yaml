@@ -55,6 +55,7 @@ hapi:
         fhir_version: R4
 #see https://hl7.org/fhir/smart-app-launch/conformance.html#response
 smart: 
+  allowed_readonly_resources: Practitioner, PractitionerRole, Organization, OrganizationAffiliation, MedicationKnowledge, List, Location, HealthcareService
   wellknown: 
     issuer: https://test.org
     jwks_uri: https://test.org/protocol/openid-connect/certs

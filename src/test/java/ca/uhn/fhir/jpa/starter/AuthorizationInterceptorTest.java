@@ -63,10 +63,19 @@ class AuthorizationInterceptorTest {
 	private IFhirResourceDao<Patient> patientResourceDao;
 
 	@Autowired
+	private IFhirResourceDao<Endpoint> endpointResourceDao;
+
+	@Autowired
 	private IFhirResourceDao<Observation> observationResourceDao;
 
 	@Autowired 
 	private IFhirResourceDao<Practitioner> practitionerResourceDao;
+
+	@Autowired
+	private IFhirResourceDao<Organization> organizationResourceDao;
+
+	@Autowired
+	private IFhirResourceDao<Group> groupResourceDao;
 
 	@LocalServerPort
 	private int port;
@@ -918,7 +927,7 @@ class AuthorizationInterceptorTest {
 		// ASSERT
 		assertEquals("HTTP 403 : No scope provided", authenticationException.getMessage());
 	}
-	
+
 	@ParameterizedTest
 	@MethodSource({"getWriteObservationUnknownScopes"})
 	void testBuildRules_createObservationOnPatient_providedJwtContainsWriteScopesAndPatientIdAndUnknownScopes(Map<String, Object> claims) {
@@ -996,6 +1005,68 @@ class AuthorizationInterceptorTest {
 
 		assertEquals(1, searchBundle.getEntry().size());
 		assertEquals(searchBundle.getEntry().get(0).getResource().getIdElement().getIdPart(), obsId);
+	}
+
+	@Test
+	void testBuildRules_searchRecords_NonExplicitlyAllowedResource() {
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("scope", "patient/*.read");
+
+		// create a patient
+		IBaseResource patient = patientResourceDao.create(new Patient()).getResource();
+		String patId = patient.getIdElement().getIdPart();
+
+		claims.put("patient", patId);
+		mockJwtWithClaims(claims);
+
+		// create an Endpoint
+		IBaseResource endpoint = endpointResourceDao.create(new Endpoint()).getResource();
+		String endpointId = endpoint.getIdElement().getIdPart();
+
+		// search for all Endpoints
+		{
+			IQuery<Bundle> executable = client.search().forResource(Endpoint.class).returnBundle(Bundle.class).withAdditionalHeader("Authorization", MOCK_HEADER);
+			assertThrows(ForbiddenOperationException.class, executable::execute);
+		}
+
+		{
+			// now for a specific Endpoint
+			IReadExecutable<Endpoint> executable = client.read().resource(Endpoint.class).withId(endpointId).withAdditionalHeader("Authorization", MOCK_HEADER);
+			assertThrows(ForbiddenOperationException.class, executable::execute);
+		}
+	}
+
+	@Test
+	void testBuildRules_searchRecords_ExplicitlyAllowed() {
+
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("scope", "patient/*.read");
+
+		// create a patient
+		IBaseResource patient = patientResourceDao.create(new Patient()).getResource();
+		String patId = patient.getIdElement().getIdPart();
+
+		claims.put("patient", patId);
+		mockJwtWithClaims(claims);
+
+		// create an Organization
+		IBaseResource org = organizationResourceDao.create(new Organization()).getResource();
+		String orgId = org.getIdElement().getIdPart();
+
+		// search for all Organizations
+		Bundle searchBundle = client.search().forResource(Organization.class).returnBundle(Bundle.class).withAdditionalHeader("Authorization", MOCK_HEADER).execute();
+		assertEquals(1, searchBundle.getEntry().size());
+		assertEquals(searchBundle.getEntry().get(0).getResource().getIdElement().getIdPart(), orgId);
+
+		// now search by specific ID
+		Organization readOrg = client.read().resource(Organization.class).withId(orgId).withAdditionalHeader("Authorization", MOCK_HEADER).execute();
+		assertNotNull(readOrg);
+		assertEquals(readOrg.getIdElement().getIdPart(), orgId);
+
+		// make a change and try to update the Org, should fail
+		readOrg.setLanguage("Klingon");
+		IUpdateExecutable orgUpdateExecutable = client.update().resource(readOrg).withId(orgId).withAdditionalHeader("Authorization", MOCK_HEADER);
+		assertThrows(ForbiddenOperationException.class, orgUpdateExecutable::execute);
 	}
 
 	private static Stream<Arguments> getReadPatientClinicalScopes() {
@@ -1099,19 +1170,19 @@ class AuthorizationInterceptorTest {
 						)
 				);
 	}
-	
+
 	/**
 	 * 
 	 * @return return scopes unknown to SMART authorization which may be in the JWT token, such as launch/patient 
 	 */
 	private static Stream<Arguments> getWriteObservationUnknownScopes() {
 		return Stream.of(
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "launch/patient patient/Observation.*");
-				}}
-			)
-		);
+				Arguments.of(
+						new HashMap<String, String>() {
+							{
+								put("scope", "launch/patient patient/Observation.*");
+							}
+						}));
 	}
 
 

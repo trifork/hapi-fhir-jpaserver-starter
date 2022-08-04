@@ -224,8 +224,11 @@ hapi:
 #  schema_management_strategy: CREATE
 #  username: SomeUsername
 
-# see https://hl7.org/fhir/smart-app-launch/conformance.html#response
-smart: 
+smart:
+  #resources to allow unresticted read access to - generally things outside of patient compartment 
+  #note: List is not included by default since it could contain anything, but would be needed to support DaVinci Forumulary
+  allowed_readonly_resources: Practitioner, PractitionerRole, Organization, OrganizationAffiliation, MedicationKnowledge, Location, HealthcareService
+  # see https://hl7.org/fhir/smart-app-launch/conformance.html#response
   wellknown: 
     issuer: 
     jwks_uri: 

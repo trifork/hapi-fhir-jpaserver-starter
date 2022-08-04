@@ -17,7 +17,7 @@ import ca.uhn.fhir.jpa.starter.smart.exception.InvalidClinicalScopeException;
 public class SmartClinicalScope {
 
 	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(SmartClinicalScope.class);
-	
+
 	private final String compartment;
 	private final String resource;
 	private final SmartOperationEnum operation;
@@ -26,6 +26,11 @@ public class SmartClinicalScope {
 		this.compartment = compartment;
 		this.resource = resource;
 		this.operation = operation;
+	}
+
+	@Override
+	public String toString() {
+		return "SmartClinicalScope [compartment=" + compartment + ", resource=" + resource + ", operation=" + operation + "]";
 	}
 
 	public SmartClinicalScope(String scope) {
@@ -39,14 +44,14 @@ public class SmartClinicalScope {
 			throw new InvalidClinicalScopeException(scope+" is not a valid clinical scope");
 		}
 	}
-	
+
 	/**
 	 * Utility for creating SMART scopes - this method will return null if the scope format is not recognized
 	 * @param scope the scope string, ex ) patient/Patient.read, patient/*.read, etc.
 	 * @return a SmartClinicalScope if the formatting is valid
 	 */
 	public static SmartClinicalScope createIfValidSmartClinicalScope(String scope) {
-		
+
 		//this method doesnt do anything special yet, but made it to allow for making smarter determinations
 		//if necessary at some point (checking the compartment/resource values, etc.)
 		try {
