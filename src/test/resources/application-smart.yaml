@@ -55,6 +55,7 @@ hapi:
         fhir_version: R4
 #see https://hl7.org/fhir/smart-app-launch/conformance.html#response
 smart: 
+  allowed_readonly_resources: Practitioner, PractitionerRole, Organization, OrganizationAffiliation, MedicationKnowledge, List, Location, HealthcareService
   wellknown: 
     issuer: https://test.org
     jwks_uri: https://test.org/protocol/openid-connect/certs
@@ -68,5 +69,5 @@ smart:
     management_endpoint: 
     introspection_endpoint : 
     revocation_endpoint : 
-    capabilities: launch-standalone
+    capabilities: launch-standalone, client-public, client-confidential-symmetric, context-standalone-patient, permission-patient
     code_challenge_methods_supported: S256

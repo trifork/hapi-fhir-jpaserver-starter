@@ -11,6 +11,8 @@ import ca.uhn.fhir.rest.server.exceptions.AuthenticationException;
 import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
 import ca.uhn.fhir.rest.server.interceptor.auth.AuthorizedList;
 import ca.uhn.fhir.rest.server.interceptor.auth.SearchNarrowingInterceptor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -28,6 +30,12 @@ public class SmartSearchNarrowingInterceptor extends SearchNarrowingInterceptor 
 	private final JwtDecoder jwtDecoder;
 	private final List<String> unauthorizedOperations = Collections.singletonList("metadata");
 
+	@Value("${hapi.fhir.smart_admin_group_enabled}")
+	private boolean smartAdminAccessEnabled;
+
+	@Value("${hapi.fhir.smart_admin_group_claim}")
+	private String smartAdminGroupClaim;
+
 	public SmartSearchNarrowingInterceptor(JwtDecoder jwtDecoder) {
 		this.jwtDecoder = jwtDecoder;
 	}
@@ -44,6 +52,20 @@ public class SmartSearchNarrowingInterceptor extends SearchNarrowingInterceptor 
 				throw new AuthenticationException("Token is required when performing a narrowing search operation");
 			}
 
+			// Check if admin user
+			if (smartAdminAccessEnabled && smartAdminGroupClaim != null) {
+
+				List<String> groups = token.getClaimAsStringList("group");
+				if (groups != null) {
+					for (String group : groups) {
+						if (smartAdminGroupClaim.equals(group)) {
+							// short circuit, we have admin access
+							return authorizedList;
+						}
+					}
+				}
+			}
+
 			try {
 				Set<SmartClinicalScope> scopes = getSmartScopes(token);
 				Map<String, Object> claims = token.getClaims();
@@ -56,6 +78,15 @@ public class SmartSearchNarrowingInterceptor extends SearchNarrowingInterceptor 
 						if (operationEnum.equals(SmartOperationEnum.WRITE)) {
 							throw new ForbiddenOperationException("Read scope is required when performing a narrowing search operation");
 						}
+
+						// the compartment names are coming from the scopes and are lower-case.
+						// need them to match resource names for the search narrowing interceptor to work
+						if ("patient".equals(compartmentName)) {
+							compartmentName = "Patient";
+						} else if ("user".equals(compartmentName)) {
+							compartmentName = "Practitioner";
+						}
+
 						authorizedList.addCompartment(String.format("%s/%s", compartmentName, id));
 					} else {
 						throw new AuthenticationException("Compartment is required when performing a narrowing search operation");
