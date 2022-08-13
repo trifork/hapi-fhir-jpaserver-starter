@@ -1,5 +1,6 @@
 package ca.uhn.fhir.jpa.starter;
 
+import ca.uhn.fhir.batch2.jobs.imprt.BulkDataImportProvider;
 import ca.uhn.fhir.batch2.jobs.reindex.ReindexProvider;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.context.FhirVersionEnum;
@@ -11,6 +12,7 @@ import ca.uhn.fhir.jpa.api.config.DaoConfig;
 import ca.uhn.fhir.jpa.api.dao.DaoRegistry;
 import ca.uhn.fhir.jpa.api.dao.IFhirSystemDao;
 import ca.uhn.fhir.jpa.binary.interceptor.BinaryStorageInterceptor;
+import ca.uhn.fhir.jpa.binary.provider.BinaryAccessProvider;
 import ca.uhn.fhir.jpa.bulk.export.provider.BulkDataExportProvider;
 import ca.uhn.fhir.jpa.graphql.GraphQLProvider;
 import ca.uhn.fhir.jpa.interceptor.CascadingDeleteInterceptor;
@@ -87,13 +89,16 @@ public class BaseJpaRestfulServer extends RestfulServer {
 	@Autowired
 	BulkDataExportProvider bulkDataExportProvider;
 	@Autowired
+	BulkDataImportProvider bulkDataImportProvider;
+   @Autowired
 	PartitionManagementProvider partitionManagementProvider;
 	@Autowired
 	ValueSetOperationProvider valueSetOperationProvider;
 	@Autowired
 	ReindexProvider reindexProvider;
 	@Autowired
-	BinaryStorageInterceptor binaryStorageInterceptor;
+	BinaryStorageInterceptor binaryStorageInterceptor;@Autowired
+  Optional<BinaryAccessProvider> binaryAccessProvider;
 	@Autowired
 	IPackageInstallerSvc packageInstallerSvc;
 	@Autowired
@@ -357,7 +362,8 @@ public class BaseJpaRestfulServer extends RestfulServer {
 		}
 
 		// Binary Storage
-		if (appProperties.getBinary_storage_enabled()) {
+		if (appProperties.getBinary_storage_enabled() && binaryAccessProvider.isPresent()) {
+      registerProvider(binaryAccessProvider.get());
 			getInterceptorService().registerInterceptor(binaryStorageInterceptor);
 		}
 
@@ -405,7 +411,12 @@ public class BaseJpaRestfulServer extends RestfulServer {
 		}
 
 
-		// valueSet Operations i.e $expand
+		//Bulk Import
+    if (appProperties.getBulk_import_enabled()) {
+      registerProvider(bulkDataImportProvider);
+    }
+
+    // valueSet Operations i.e $expand
 		registerProvider(myValueSetOperationProvider);
 
 		//reindex Provider $reindex
