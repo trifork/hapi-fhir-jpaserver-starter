@@ -11,6 +11,7 @@ import ca.uhn.fhir.rest.server.exceptions.ForbiddenOperationException;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.*;
+import org.hl7.fhir.r4.model.Bundle.BundleEntryComponent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -1069,6 +1072,46 @@ class AuthorizationInterceptorTest {
 		assertThrows(ForbiddenOperationException.class, orgUpdateExecutable::execute);
 	}
 
+	@ParameterizedTest
+	@MethodSource({ "getPatientStarReadScopes" })
+	void test_patient_read_PatientEverything(Map<String, Object> claims) {
+
+		// create a patient
+		IBaseResource patient = patientResourceDao.create(new Patient()).getResource();
+		String patId = patient.getIdElement().getIdPart();
+
+		String patId2 = patientResourceDao.create(new Patient()).getResource().getIdElement().getIdPart();
+
+		// create an observation for the patient
+		IBaseResource observation = observationResourceDao
+				.create(new Observation().setSubject(new Reference(patient.getIdElement()))).getResource();
+		String obsId = observation.getIdElement().getIdPart();
+
+		claims.put("patient", patId);
+		mockJwtWithClaims(claims);
+
+		Bundle searchBundle = client.operation().onInstance("Patient/" + patId).named("$everything").withNoParameters(Parameters.class)
+				.returnResourceType(Bundle.class).withAdditionalHeader("Authorization", MOCK_HEADER).execute();
+
+		assertEquals(2, searchBundle.getEntry().size());
+
+		List<String> idsToFind = new ArrayList<>();
+		idsToFind.add(patId);
+		idsToFind.add(obsId);
+
+		for (BundleEntryComponent bec : searchBundle.getEntry()) {
+			Resource res = bec.getResource();
+			idsToFind.remove(res.getIdElement().getIdPart());
+		}
+		assertEquals(0, idsToFind.size());
+
+		// now try a patient everything for a different patient, should throw an exception
+		IOperationUntypedWithInput<Bundle> searchExecutable = client.operation().onInstance("Patient/" + patId2).named("$everything").withNoParameters(Parameters.class)
+				.returnResourceType(Bundle.class).withAdditionalHeader("Authorization", MOCK_HEADER);
+
+		assertThrows(ForbiddenOperationException.class, searchExecutable::execute);
+	}
+
 	private static Stream<Arguments> getReadPatientClinicalScopes() {
 		return Stream.of(
 				Arguments.of(
@@ -1084,6 +1127,21 @@ class AuthorizationInterceptorTest {
 				);
 	}
 
+	private static Stream<Arguments> getPatientStarReadScopes() {
+		return Stream.of(
+				Arguments.of(
+						new HashMap<String, String>() {
+							{
+								put("scope", "patient/*.read");
+							}
+						}),
+				Arguments.of(
+						new HashMap<String, String>() {
+							{
+								put("scope", "patient/*.*");
+							}
+						}));
+	}
 
 	private static Stream<Arguments> getAllPatientClinicalScopes() {
 		return Stream.of(
