@@ -11,8 +11,6 @@ import org.hl7.fhir.r4.model.UriType;
 import org.hl7.fhir.r4.model.CapabilityStatement.CapabilityStatementRestComponent;
 import org.hl7.fhir.r4.model.CapabilityStatement.CapabilityStatementRestSecurityComponent;
 import org.hl7.fhir.r4.model.CapabilityStatement.RestfulCapabilityMode;
-import org.hl7.fhir.r4.model.CodeableConcept;
-import org.hl7.fhir.r4.model.Coding;
 import ca.uhn.fhir.interceptor.api.Hook;
 import ca.uhn.fhir.interceptor.api.Interceptor;
 import ca.uhn.fhir.interceptor.api.Pointcut;
@@ -73,9 +71,11 @@ public class SmartCapabilityStatementInterceptorR4 {
 		CapabilityStatementRestSecurityComponent securityComponent = new CapabilityStatementRestSecurityComponent();
 
 		// see http://hl7.org/fhir/smart-app-launch/1.0.0/conformance/index.html#example
-		CodeableConcept cc = securityComponent.addService();
-		cc.addCoding(new Coding("http://hl7.org/fhir/restful-security-service", "SMART-on-FHIR", null));
-		cc.setText("OAuth2 using SMART-on-FHIR profile (see http://docs.smarthealthit.org)");
+		// NOTE: this CodeableConcept is included in the in the smart example above, but it fails Touchstone validation
+		// and is not required by SMART per: https://chat.fhir.org/#narrow/stream/179170-smart/topic/SMART.20on.20FHIR.20v1.20System.20Links.20Broken
+		// CodeableConcept cc = securityComponent.addService();
+		// cc.addCoding(new Coding("http://hl7.org/fhir/restful-security-service", "SMART-on-FHIR", null));
+		// cc.setText("OAuth2 using SMART-on-FHIR profile (see http://docs.smarthealthit.org)");
 
 		Extension oauthExtension = new Extension();
 
