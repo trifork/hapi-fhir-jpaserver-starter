@@ -97,8 +97,9 @@ public class BaseJpaRestfulServer extends RestfulServer {
 	@Autowired
 	ReindexProvider reindexProvider;
 	@Autowired
-	BinaryStorageInterceptor binaryStorageInterceptor;@Autowired
-  Optional<BinaryAccessProvider> binaryAccessProvider;
+	BinaryStorageInterceptor binaryStorageInterceptor;
+	@Autowired
+   Optional<BinaryAccessProvider> binaryAccessProvider;
 	@Autowired
 	IPackageInstallerSvc packageInstallerSvc;
 	@Autowired
@@ -462,10 +463,9 @@ public class BaseJpaRestfulServer extends RestfulServer {
 			daoConfig.setLastNEnabled(true);
 		}
 
-		daoConfig.setStoreResourceInLuceneIndex(appProperties.getStore_resource_in_lucene_index_enabled());daoConfig.getModelConfig().setNormalizedQuantitySearchLevel(appProperties.getNormalized_quantity_search_level());
+		daoConfig.setStoreResourceInHSearchIndex(appProperties.getStore_resource_in_lucene_index_enabled());daoConfig.getModelConfig().setNormalizedQuantitySearchLevel(appProperties.getNormalized_quantity_search_level());
 
 		daoConfig.getModelConfig().setIndexOnContainedResources(appProperties.getEnable_index_contained_resource());
 
 	}
-
 }
