@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 	"spring.batch.job.enabled=false",
 	"spring.datasource.url=jdbc:h2:mem:tr4",
 	"hapi.fhir.fhir_version=r4",
+	"hapi.fhir.advanced_lucene_indexing=true",
 	"spring.main.allow-bean-definition-overriding=true",
 	"spring.jpa.properties.hibernate.search.enabled=true",
 	"spring.jpa.properties.hibernate.search.backend.type=lucene",
