@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@ConditionalOnProperty(prefix = "hapi.fhir", name = "smart_enabled", havingValue = "true")
-@Component
 public abstract class SmartAuthorizationRuleBuilder {
 
 	private final Map<String, SmartResourceMapping> resourceMap;

@@ -16,14 +16,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = Application.class, properties =
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = {Application.class, JpaStarterWebsocketDispatcherConfig.class}, properties =
   {
-     "spring.batch.job.enabled=false",
      "hapi.fhir.fhir_version=dstu2",
      "spring.datasource.url=jdbc:h2:mem:dbr2",
-	  "spring.main.allow-bean-definition-overriding=true",
-	  "hapi.fhir.smart_enabled=false",
-	  "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
   })
 public class ExampleServerDstu2IT {
 

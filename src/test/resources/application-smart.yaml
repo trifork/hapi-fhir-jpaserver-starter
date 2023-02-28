@@ -28,6 +28,8 @@ spring:
     allow-bean-definition-overriding: true
 hapi:
   fhir:
+    custom-bean-packages : ca.uhn.fhir.jpa.starter.smart
+    custom-interceptor-classes : ca.uhn.fhir.jpa.starter.smart.security.interceptor.SmartScopeAuthorizationInterceptor,ca.uhn.fhir.jpa.starter.smart.security.interceptor.SmartSearchNarrowingInterceptor,ca.uhn.fhir.jpa.starter.smart.SmartCapabilityStatementInterceptorR4
     openapi_enabled: true
     smart_enabled: true
     smart_admin_group_enabled: true

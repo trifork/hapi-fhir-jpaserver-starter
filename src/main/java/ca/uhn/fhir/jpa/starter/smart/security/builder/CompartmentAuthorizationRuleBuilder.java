@@ -16,8 +16,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@ConditionalOnProperty(prefix = "hapi.fhir", name = "smart_enabled", havingValue = "true")
-@Component
 public class CompartmentAuthorizationRuleBuilder extends SmartAuthorizationRuleBuilder {
 
 	@Override
