@@ -5,7 +5,18 @@ management:
     web:
       exposure:
         include: "health,prometheus"
-spring:
+
+# Disables all security
+#  autoconfigure:
+#    exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+# Enables JWT signature validation (BEWARE: This effectively disables all security if no JWT VALUE checking logic is enabled, fx hapi.smart_enabled or implement your own logic through ca.uhn.fhir.jpa.starter.config.JwtSecurityConfig)
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          jwk-set-uri: http://localhost:8081/auth/realms/smart/protocol/openid-connect/certs
+#          issuer-uri: http://localhost:8081/auth/realms/smart
+    
   main:
     allow-circular-references: true
     #allow-bean-definition-overriding: true

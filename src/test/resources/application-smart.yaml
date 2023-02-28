@@ -26,6 +26,7 @@ spring:
   main:
     #    TODO 5.6.0 -> Prevent duplicate bean definitions in the Spring batch config in HAPI: see:
     allow-bean-definition-overriding: true
+    allow-circular-references: true
 hapi:
   fhir:
     custom-bean-packages : ca.uhn.fhir.jpa.starter.smart

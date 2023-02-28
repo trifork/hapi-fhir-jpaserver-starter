@@ -1,30 +1,38 @@
 package ca.uhn.fhir.jpa.starter.smart;
 
-import ca.uhn.fhir.jpa.starter.smart.util.OAuth2JWTConditional;
-import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.web.SecurityFilterChain;
 
-@Conditional(OAuth2JWTConditional.class)
+//@Conditional(OAuth2JWTConditional.class)
+@ConditionalOnProperty(prefix = "hapi.fhir", name = "smart_enabled", havingValue = "true")
 @Configuration
 @EnableWebSecurity
-public class JwtSecurityConfig extends WebSecurityConfigurerAdapter {
+public class JwtSecurityConfig {
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
-		http.authorizeRequests().anyRequest().permitAll().and().csrf().disable();
-	}
+	@Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+  private String jwkSetUri;
 
 	@Bean
-	JwtDecoder jwtDecoder(OAuth2ResourceServerProperties properties) {
-		OAuth2ResourceServerProperties.Jwt jwtConfiguration = properties.getJwt();
-		return NimbusJwtDecoder.withJwkSetUri(jwtConfiguration.getJwkSetUri()).build();
+	public JwtDecoder jwtDecoder() {
+		return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
 	}
-
+	
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		return http.authorizeRequests()
+				.anyRequest()
+				.permitAll()
+				.and()
+				.csrf().disable()
+				.build();	
+	}
 }
