@@ -2,6 +2,14 @@ spring:
   main:
     allow-circular-references: true
     #allow-bean-definition-overriding: true
+
+  #Since spring-boot-starter-security is add on the classpath for SMART, we need to disable security auto-configuration
+  #in order for the non-SMART tests to work     
+  autoconfigure:
+    exclude: 
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+  
   flyway:
     enabled: false
     check-location: false
