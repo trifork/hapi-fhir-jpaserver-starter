@@ -650,15 +650,15 @@ class AuthorizationInterceptorTest {
 		String mockId = mockPatient.getIdElement().getIdPart();
 		Reference patientReference = new Reference(mockPatient.getIdElement());
 
-		IBaseResource mockObservation = observationResourceDao.create(new Observation().setSubject(patientReference)).getResource();
+		Observation mockObservation = (Observation) observationResourceDao.create(new Observation().setSubject(patientReference)).getResource();
 
 
 		claims.put("patient", mockId);
 		mockJwtWithClaims(claims);
 
 		// ACT
-		IUpdateExecutable observationUpdateExecutable = client.update().resource(mockObservation).conditional().where(Observation.IDENTIFIER.exactly().identifier(mockObservation.getIdElement().getValue())).withAdditionalHeader("Authorization", MOCK_HEADER);
-		IDeleteTyped observationDeleteExecutable = client.delete().resourceConditionalByType(mockObservation.getClass()).where(Observation.IDENTIFIER.exactly().identifier(mockObservation.getIdElement().getValue())).withAdditionalHeader("Authorization", MOCK_HEADER);
+		IUpdateExecutable observationUpdateExecutable = client.update().resource(mockObservation).conditional().where(Observation.RES_ID.exactly().identifier(mockObservation.getIdElement().getValue())).withAdditionalHeader("Authorization", MOCK_HEADER);
+		IDeleteTyped observationDeleteExecutable = client.delete().resourceConditionalByType(mockObservation.getClass()).where(Observation.RES_ID.exactly().identifier(mockObservation.getIdElement().getValue())).withAdditionalHeader("Authorization", MOCK_HEADER);
 
 		// ASSERT
 		assertDoesNotThrow(observationUpdateExecutable::execute);
