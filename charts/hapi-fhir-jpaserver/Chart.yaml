@@ -7,17 +7,17 @@ sources:
   - https://github.com/hapifhir/hapi-fhir-jpaserver-starter
 dependencies:
   - name: postgresql
-    version: 11.8.1
+    version: 12.1.2
     repository: https://charts.bitnami.com/bitnami
     condition: postgresql.enabled
-appVersion: v6.x
-version: 0.10.1
+appVersion: 6.2.2
+version: 0.11.1
 annotations:
   artifacthub.io/license: Apache-2.0
   artifacthub.io/changes: |
     # When using the list of objects option the valid supported kinds are
     # added, changed, deprecated, removed, fixed, and security.
     - kind: changed
-      description: updated image version to v6.1.0
+      description: updated HAPI FHIR JPA Server app image version to v6.2.2
     - kind: changed
-      description: added section on configuring the chart for distributed tracing to the README.md
+      description: updated curl used by helm tests to version to v7.87.0

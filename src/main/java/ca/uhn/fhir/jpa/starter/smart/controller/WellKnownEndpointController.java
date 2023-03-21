@@ -3,6 +3,7 @@ package ca.uhn.fhir.jpa.starter.smart.controller;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,6 +12,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 
 @RestController
+@ConditionalOnProperty(prefix = "hapi.fhir", name = "smart_enabled", havingValue = "true")
 public class WellKnownEndpointController {
 
 	@Value("${smart.wellknown.issuer}")
