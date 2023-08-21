@@ -1,7 +1,7 @@
 package ca.uhn.fhir.jpa.starter.smart;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.jpa.api.config.DaoConfig;
+import ca.uhn.fhir.jpa.api.config.JpaStorageSettings;
 import ca.uhn.fhir.jpa.api.dao.IFhirResourceDao;
 import ca.uhn.fhir.jpa.starter.Application;
 import ca.uhn.fhir.jpa.starter.smart.conf.FhirStarterTestContainers;
@@ -63,7 +63,7 @@ class KeycloakSmartIT {
 	private IFhirResourceDao<Practitioner> practitionerResourceDao;
 
 	@Autowired
-	DaoConfig daoConfig;
+	JpaStorageSettings daoConfig;
 
 	private IGenericClient client;
 	private FhirContext ctx;
@@ -78,8 +78,8 @@ class KeycloakSmartIT {
 
 	@BeforeEach
 	void beforeEach() {
-		daoConfig.setResourceServerIdStrategy(DaoConfig.IdStrategyEnum.UUID);
-		daoConfig.setResourceClientIdStrategy(DaoConfig.ClientIdStrategyEnum.ANY);
+		daoConfig.setResourceServerIdStrategy(JpaStorageSettings.IdStrategyEnum.UUID);
+		daoConfig.setResourceClientIdStrategy(JpaStorageSettings.ClientIdStrategyEnum.ANY);
 		ctx = FhirContext.forR4();
 		ctx.getRestfulClientFactory().setServerValidationMode(ServerValidationModeEnum.NEVER);
 		ctx.getRestfulClientFactory().setSocketTimeout(1200 * 1000);
@@ -104,7 +104,7 @@ class KeycloakSmartIT {
 
 	@Test
 	void getPatientAsPatient_wrongPatientId() throws JSONException {
-		// ARRNAGE
+		// ARRANGE
 		String mockId = "6";
 		Patient createdResource = getPatient(mockId);
 
@@ -125,7 +125,7 @@ class KeycloakSmartIT {
 
 	@Test
 	void addObservationAsPatient_patientDoesNotHasPermissionToWrite() throws JSONException {
-		// ARRNAGE
+		// ARRANGE
 		Patient updatedResource = getPatient(PATIENT_ATTRIBUTE);
 
 		String jwt = getJwtToken("patient", "patient", "patient/*.read");
@@ -168,7 +168,7 @@ class KeycloakSmartIT {
 
 	@Test
 	void doOperationsAsPatient_patientHasAllPermissions() throws JSONException {
-		// ARRNAGE
+		// ARRANGE
 		Patient expectedResource = getPatient(PATIENT_ATTRIBUTE);
 
 		String jwt = getJwtToken("patient", "patient", "patient/*.*");

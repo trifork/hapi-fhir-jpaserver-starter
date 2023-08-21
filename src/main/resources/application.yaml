@@ -58,6 +58,9 @@ hapi:
     openapi_enabled: true
     ### This is the FHIR version. Choose between, DSTU2, DSTU3, R4 or R5
     fhir_version: R4
+    ### This flag when enabled to true, will avail evaluate measure operations from CR Module.
+    ### Flag is false by default, can be passed as command line argument to override.
+    cr_enabled: "${CR_ENABLED: false}"
     ### enable to use the ApacheProxyAddressStrategy which uses X-Forwarded-* headers
     ### to determine the FHIR server address
     #   use_apache_address_strategy: false
@@ -71,6 +74,8 @@ hapi:
     #    server_address: http://hapi.fhir.org/baseR4
     #    defer_indexing_for_codesystems_of_size: 101
     #    install_transitive_ig_dependencies: true
+    ### tells the server whether to attempt to load IG resources that are already present
+    #    reload_existing_implementationGuides : false
     #    implementationguides:
     ###    example from registry (packages.fhir.org)
     #      swiss:
@@ -94,6 +99,8 @@ hapi:
     #    allow_multiple_delete: true
     #    allow_override_default_search_params: true
     #    auto_create_placeholder_reference_targets: false
+    ### tells the server to automatically append the current version of the target resource to references at these paths
+    #    auto_version_reference_at_paths: Device.patient, Device.location, Device.parent, DeviceMetric.parent, DeviceMetric.source, Observation.device, Observation.subject
     #    cr_enabled: true
     #    ips_enabled: false
     #    default_encoding: JSON
@@ -137,14 +144,14 @@ hapi:
     search-coord-core-pool-size: 20
     search-coord-max-pool-size: 100
     search-coord-queue-capacity: 200
-    
+
     # comma-separated package names, will be @ComponentScan'ed by Spring to allow for creating custom Spring beans
     #custom-bean-packages:
-    
-    # comma-separated list of fully qualified interceptor classes. 
-    # classes listed here will be fetched from the Spring context when combined with 'custom-bean-packages', 
-    # or will be instantiated via reflection using an no-arg contructor; then registered with the server  
-    #custom-interceptor-classes:  
+
+    # comma-separated list of fully qualified interceptor classes.
+    # classes listed here will be fetched from the Spring context when combined with 'custom-bean-packages',
+    # or will be instantiated via reflection using an no-arg contructor; then registered with the server
+    #custom-interceptor-classes:
 
     # Threadpool size for BATCH'ed GETs in a bundle.
     #    bundle_batch_pool_size: 10
@@ -195,7 +202,7 @@ hapi:
 #        quitWait:
 #    lastn_enabled: true
 #    store_resource_in_lucene_index_enabled: true
-###  This is configuration for normalized quantity serach level default is 0
+###  This is configuration for normalized quantity search level default is 0
 ###   0: NORMALIZED_QUANTITY_SEARCH_NOT_SUPPORTED - default
 ###   1: NORMALIZED_QUANTITY_STORAGE_SUPPORTED
 ###   2: NORMALIZED_QUANTITY_SEARCH_SUPPORTED
