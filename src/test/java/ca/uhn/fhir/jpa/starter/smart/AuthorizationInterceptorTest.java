@@ -54,9 +54,9 @@ class AuthorizationInterceptorTest {
 	 *
 	 * The test will fail if the boot maven profile is disabled so make sure they're run with said profile.
 	 */
-	public static final String ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny all requests that do not match any pre-defined rules";
-	public static final String ACCESS_DENIED_BY_RULE_DENY_ALL_REQUESTS_IF_NO_ID_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny ALL patient requests if no launch context is given!";
-	public static final String ACCESS_DENIED_DEFAULT_POLICY = "HTTP 403 : HAPI-0334: Access denied by default policy (no applicable rules)";
+	public static final String ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE = "HTTP 403 Forbidden: HAPI-0333: Access denied by rule: Deny all requests that do not match any pre-defined rules";
+	public static final String ACCESS_DENIED_BY_RULE_DENY_ALL_REQUESTS_IF_NO_ID_EXCEPTION_MESSAGE = "HTTP 403 Forbidden: HAPI-0333: Access denied by rule: Deny ALL patient requests if no launch context is given!";
+	public static final String ACCESS_DENIED_DEFAULT_POLICY = "HTTP 403 Forbidden: HAPI-0334: Access denied by default policy (no applicable rules)";
 	private IGenericClient client;
 	private FhirContext ctx;
 
@@ -909,7 +909,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientSearchExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : Read scope is required when performing a narrowing search operation", forbiddenOperationException.getMessage());
+		assertEquals("HTTP 403 Forbidden: Read scope is required when performing a narrowing search operation", forbiddenOperationException.getMessage());
 	}
 
 	@Test
@@ -929,7 +929,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException authenticationException = assertThrows(ForbiddenOperationException.class, patientSearchExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : No scope provided", authenticationException.getMessage());
+		assertEquals("HTTP 403 Forbidden: No scope provided", authenticationException.getMessage());
 	}
 
 	@ParameterizedTest
