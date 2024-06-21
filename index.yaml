@@ -6,6 +6,41 @@ entries:
         # When using the list of objects option the valid supported kinds are
         # added, changed, deprecated, removed, fixed, and security.
         - kind: changed
+          description: updated starter image to v7.2.0
+        - kind: changed
+          description: updated curlimages/curl to 8.6.0
+        - kind: changed
+          description: "updated postgresql sub-chart to 14.3.1."
+      artifacthub.io/containsSecurityUpdates: "false"
+      artifacthub.io/license: Apache-2.0
+      artifacthub.io/operator: "false"
+      artifacthub.io/prerelease: "false"
+      artifacthub.io/recommendations: |
+        - url: https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
+        - url: https://artifacthub.io/packages/helm/bitnami/postgresql
+    apiVersion: v2
+    appVersion: 7.2.0
+    created: "2024-06-21T19:01:39.65529034Z"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 14.3.1
+    description: A Helm chart for deploying the HAPI FHIR JPA server starter on Kubernetes.
+    digest: a4e5d3bf28c360d721a056334e79f7279884c8d1ea32e072526b7aa1aca36767
+    home: https://github.com/hapifhir/hapi-fhir-jpaserver-starter
+    name: hapi-fhir-jpaserver
+    sources:
+    - https://github.com/hapifhir/hapi-fhir-jpaserver-starter
+    type: application
+    urls:
+    - https://github.com/trifork/hapi-fhir-jpaserver-starter/releases/download/helm-v0.17.0/hapi-fhir-jpaserver-0.17.0.tgz
+    version: 0.17.0
+  - annotations:
+      artifacthub.io/changes: |
+        # When using the list of objects option the valid supported kinds are
+        # added, changed, deprecated, removed, fixed, and security.
+        - kind: changed
           description: updated starter image to v7.0.3
         - kind: changed
           description: updated curlimages/curl to 8.6.0
@@ -102,4 +137,4 @@ entries:
     urls:
     - https://github.com/trifork/hapi-fhir-jpaserver-starter/releases/download/helm-v0.13.0/hapi-fhir-jpaserver-0.13.0.tgz
     version: 0.13.0
-generated: "2024-04-17T12:47:56.751156449Z"
+generated: "2024-06-21T19:01:39.655318904Z"
