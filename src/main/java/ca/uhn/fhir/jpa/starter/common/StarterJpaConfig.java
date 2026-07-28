@@ -63,7 +63,6 @@ import ca.uhn.fhir.rest.api.IResourceSupportedSvc;
 import ca.uhn.fhir.rest.api.server.SystemRequestDetails;
 import ca.uhn.fhir.rest.client.api.IRestfulClientFactory;
 import ca.uhn.fhir.rest.openapi.OpenApiInterceptor;
-import ca.uhn.fhir.rest.server.*;
 import ca.uhn.fhir.rest.server.interceptor.CorsInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.FhirPathFilterInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.LoggingInterceptor;
@@ -72,6 +71,7 @@ import ca.uhn.fhir.rest.server.interceptor.ResponseHighlighterInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.ResponseValidatingInterceptor;
 import ca.uhn.fhir.rest.server.provider.ResourceProviderFactory;
 import ca.uhn.fhir.rest.server.util.ISearchParamRegistry;
+import ca.uhn.fhir.rest.server.*;
 import ca.uhn.fhir.validation.IValidatorModule;
 import ca.uhn.fhir.validation.ResultSeverityEnum;
 import com.google.common.base.Strings;
@@ -171,7 +171,7 @@ public class StarterJpaConfig {
 
 	@Bean
 	public DaoRegistrationService daoRegistrationService(DaoRegistry theDaoRegistry) {
-		return new JpaStarterDaoRegistrationService(theDaoRegistry);
+		return new DaoRegistrationService(theDaoRegistry);
 	}
 
 	@Bean
@@ -338,37 +338,38 @@ public class StarterJpaConfig {
 
 	@Bean
 	public RestfulServer restfulServer(
-		FhirContext theFhirContext,
-		IFhirSystemDao<?, ?> fhirSystemDao,
-		AppProperties appProperties,
-		DaoRegistry daoRegistry,
-		Optional<MdmProviderLoader> mdmProviderProvider,
-		IJpaSystemProvider jpaSystemProvider,
-		ResourceProviderFactory resourceProviderFactory,
-		JpaStorageSettings jpaStorageSettings,
-		SubscriptionSettings subscriptionSettings,
-		ISearchParamRegistry searchParamRegistry,
-		IValidationSupport theValidationSupport,
-		DatabaseBackedPagingProvider databaseBackedPagingProvider,
-		LoggingInterceptor loggingInterceptor,
-		Optional<TerminologyUploaderProvider> terminologyUploaderProvider,
-		Optional<SubscriptionTriggeringProvider> subscriptionTriggeringProvider,
-		Optional<CorsInterceptor> corsInterceptor,
-		IInterceptorBroadcaster interceptorBroadcaster,
-		Optional<BinaryAccessProvider> binaryAccessProvider,
-		IValidatorModule validatorModule,
-		Optional<GraphQLProvider> graphQLProvider,
-		BulkDataExportProvider bulkDataExportProvider,
-		BulkDataImportProvider bulkDataImportProvider,
-		ValueSetOperationProvider theValueSetOperationProvider,
-		ReindexProvider reindexProvider,
-		Optional<RepositoryValidatingInterceptor> repositoryValidatingInterceptor,
-		IPackageInstallerSvc packageInstallerSvc,
-		ThreadSafeResourceDeleterSvc theThreadSafeResourceDeleterSvc,
-		ApplicationContext appContext,
-		Optional<IpsOperationProvider> theIpsOperationProvider,
-		Optional<IImplementationGuideOperationProvider> implementationGuideOperationProvider,
-		DiffProvider diffProvider, FhirContext fhirContext) {
+			FhirContext theFhirContext,
+			IFhirSystemDao<?, ?> fhirSystemDao,
+			AppProperties appProperties,
+			DaoRegistry daoRegistry,
+			Optional<MdmProviderLoader> mdmProviderProvider,
+			IJpaSystemProvider jpaSystemProvider,
+			ResourceProviderFactory resourceProviderFactory,
+			JpaStorageSettings jpaStorageSettings,
+			SubscriptionSettings subscriptionSettings,
+			ISearchParamRegistry searchParamRegistry,
+			IValidationSupport theValidationSupport,
+			DatabaseBackedPagingProvider databaseBackedPagingProvider,
+			LoggingInterceptor loggingInterceptor,
+			Optional<TerminologyUploaderProvider> terminologyUploaderProvider,
+			Optional<SubscriptionTriggeringProvider> subscriptionTriggeringProvider,
+			Optional<CorsInterceptor> corsInterceptor,
+			IInterceptorBroadcaster interceptorBroadcaster,
+			Optional<BinaryAccessProvider> binaryAccessProvider,
+			IValidatorModule validatorModule,
+			Optional<GraphQLProvider> graphQLProvider,
+			BulkDataExportProvider bulkDataExportProvider,
+			BulkDataImportProvider bulkDataImportProvider,
+			ValueSetOperationProvider theValueSetOperationProvider,
+			ReindexProvider reindexProvider,
+			Optional<RepositoryValidatingInterceptor> repositoryValidatingInterceptor,
+			IPackageInstallerSvc packageInstallerSvc,
+			ThreadSafeResourceDeleterSvc theThreadSafeResourceDeleterSvc,
+			ApplicationContext appContext,
+			Optional<IpsOperationProvider> theIpsOperationProvider,
+			Optional<IImplementationGuideOperationProvider> implementationGuideOperationProvider,
+			DiffProvider diffProvider,
+			FhirContext fhirContext) {
 		RestfulServer fhirServer = new RestfulServer(fhirSystemDao.getContext());
 
 		List<String> supportedResourceTypes = appProperties.getSupported_resource_types();
