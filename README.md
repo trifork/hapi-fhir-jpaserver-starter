@@ -485,6 +485,34 @@ If you would like it to be hosted at e.g. hapi-fhir-jpaserver, e.g. http://local
           fhir_version: R4
 ```
 
+## Running behind a reverse proxy
+
+When the starter is exposed through a reverse proxy or load balancer, configure the public FHIR base URL that clients
+should see in generated links, Bundle entries, and the web tester.
+
+For a stable public URL, set `hapi.fhir.server_address` to the externally reachable FHIR endpoint:
+
+```yaml
+hapi:
+  fhir:
+    server_address: https://fhir.example.com/fhir
+    tester:
+      home:
+        server_address: https://fhir.example.com/fhir
+```
+
+If your proxy forwards the original request host and scheme, enable the Apache proxy address strategy instead:
+
+```yaml
+hapi:
+  fhir:
+    use_apache_address_strategy: true
+    use_apache_address_strategy_https: true
+```
+
+Ensure the proxy sends the usual forwarded headers, such as `X-Forwarded-Host`, `X-Forwarded-Proto`, and
+`X-Forwarded-Prefix` when the server is mounted below a path prefix.
+
 
 ## Deploy with docker compose
 
@@ -595,18 +623,28 @@ Set `hapi.fhir.mdm_enabled=true` in the [application.yaml](https://github.com/ha
 
 ## Using Elasticsearch
 
-By default, the server will use embedded lucene indexes for terminology and fulltext indexing purposes. You can switch this to using lucene by editing the properties in [application.yaml](https://github.com/hapifhir/hapi-fhir-jpaserver-starter/blob/master/src/main/resources/application.yaml)
+By default, the server will use embedded Lucene indexes for terminology and fulltext indexing purposes. You can switch this to Elasticsearch by editing the properties in [application.yaml](https://github.com/hapifhir/hapi-fhir-jpaserver-starter/blob/master/src/main/resources/application.yaml)
 
 For example:
 
-```properties
-elasticsearch.enabled=true
-elasticsearch.rest_url=localhost:9200
-elasticsearch.username=SomeUsername
-elasticsearch.password=SomePassword
-elasticsearch.protocol=http
-elasticsearch.required_index_status=YELLOW
-elasticsearch.schema_management_strategy=CREATE
+```yaml
+spring:
+  elasticsearch:
+    uris: http://localhost:9200
+    username: SomeUsername
+    password: SomePassword
+  jpa:
+    properties:
+      hibernate:
+        search:
+          enabled: true
+          backend:
+            type: elasticsearch
+            protocol: http
+            schema_management:
+              minimal_required_status: YELLOW
+          schema_management:
+            strategy: CREATE
 ```
 
 ## Enabling LastN
@@ -685,4 +723,4 @@ You can configure the agent using environment variables or Java system propertie
 
 ## Enable MCP
 
-MCP capabilities can be enabled by setting the `spring.ai.mcp.server.enabled` to `true`. This will enable the MCP server and expose the MCP endpoints. The MCP endpoint is currently hardcoded to `/mcp/message` and can be tried out by running e.g. `npx @modelcontextprotocol/inspector` and connect to http://localhost:8080/mcp/message using Streamable HTTP. Spring AI MCP Server Auto Configuration is currently not supported.
+MCP capabilities can be enabled by setting the `spring.ai.mcp.server.enabled` to `true`. This will enable the MCP server and expose the MCP endpoints. The default MCP endpoint is `/mcp/messages` and can be tried out by running e.g. `npx @modelcontextprotocol/inspector` and connecting to http://localhost:8080/mcp/messages using Streamable HTTP. Spring AI MCP Server Auto Configuration is currently not supported.
