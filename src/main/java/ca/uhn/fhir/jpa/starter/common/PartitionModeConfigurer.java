@@ -9,6 +9,7 @@ import ca.uhn.fhir.jpa.starter.AppProperties;
 import ca.uhn.fhir.rest.server.RestfulServer;
 import ca.uhn.fhir.rest.server.interceptor.partition.RequestTenantPartitionInterceptor;
 import ca.uhn.fhir.rest.server.tenant.UrlBaseTenantIdentificationStrategy;
+import ca.uhn.fhir.storage.TransactionBundleNormalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -25,13 +26,18 @@ public class PartitionModeConfigurer {
 			PartitionSettings myPartitionSettings,
 			RestfulServer myRestfulServer,
 			PartitionManagementProvider myPartitionManagementProvider,
-			DaoRegistry myDaoRegistry) {
+			DaoRegistry myDaoRegistry,
+			TransactionBundleNormalizer myTransactionBundleNormalizer) {
 
 		var partitioning = myAppProperties.getPartitioning();
 		if (partitioning.getPatient_id_partitioning_mode()) {
 			ourLog.info("Partitioning mode enabled in: Patient ID partitioning mode");
 			var patientIdInterceptor = new PatientIdPartitionInterceptor(
-					myRestfulServer.getFhirContext(), mySearchParamExtractor, myPartitionSettings, myDaoRegistry);
+					myRestfulServer.getFhirContext(),
+					mySearchParamExtractor,
+					myPartitionSettings,
+					myDaoRegistry,
+					myTransactionBundleNormalizer);
 			myRestfulServer.registerInterceptor(patientIdInterceptor);
 			myPartitionSettings.setUnnamedPartitionMode(true);
 		} else if (partitioning.getRequest_tenant_partitioning_mode()) {

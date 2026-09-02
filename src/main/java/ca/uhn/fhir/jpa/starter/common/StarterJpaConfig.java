@@ -13,9 +13,11 @@ import ca.uhn.fhir.interceptor.model.RequestPartitionId;
 import ca.uhn.fhir.jpa.api.IDaoRegistry;
 import ca.uhn.fhir.jpa.api.config.JpaStorageSettings;
 import ca.uhn.fhir.jpa.api.config.ThreadPoolFactoryConfig;
+import ca.uhn.fhir.jpa.api.dao.DaoRegistrationService;
 import ca.uhn.fhir.jpa.api.dao.DaoRegistry;
 import ca.uhn.fhir.jpa.api.dao.IFhirSystemDao;
 import ca.uhn.fhir.jpa.binary.provider.BinaryAccessProvider;
+import ca.uhn.fhir.jpa.config.SearchConfig;
 import ca.uhn.fhir.jpa.config.util.HapiEntityManagerFactoryUtil;
 import ca.uhn.fhir.jpa.config.util.ResourceCountCacheUtil;
 import ca.uhn.fhir.jpa.dao.FulltextSearchSvcImpl;
@@ -61,12 +63,6 @@ import ca.uhn.fhir.rest.api.IResourceSupportedSvc;
 import ca.uhn.fhir.rest.api.server.SystemRequestDetails;
 import ca.uhn.fhir.rest.client.api.IRestfulClientFactory;
 import ca.uhn.fhir.rest.openapi.OpenApiInterceptor;
-import ca.uhn.fhir.rest.server.ApacheProxyAddressStrategy;
-import ca.uhn.fhir.rest.server.ETagSupportEnum;
-import ca.uhn.fhir.rest.server.HardcodedServerAddressStrategy;
-import ca.uhn.fhir.rest.server.IServerConformanceProvider;
-import ca.uhn.fhir.rest.server.IncomingRequestAddressStrategy;
-import ca.uhn.fhir.rest.server.RestfulServer;
 import ca.uhn.fhir.rest.server.interceptor.CorsInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.FhirPathFilterInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.LoggingInterceptor;
@@ -75,6 +71,7 @@ import ca.uhn.fhir.rest.server.interceptor.ResponseHighlighterInterceptor;
 import ca.uhn.fhir.rest.server.interceptor.ResponseValidatingInterceptor;
 import ca.uhn.fhir.rest.server.provider.ResourceProviderFactory;
 import ca.uhn.fhir.rest.server.util.ISearchParamRegistry;
+import ca.uhn.fhir.rest.server.*;
 import ca.uhn.fhir.validation.IValidatorModule;
 import ca.uhn.fhir.validation.ResultSeverityEnum;
 import com.google.common.base.Strings;
@@ -110,7 +107,7 @@ import static ca.uhn.fhir.jpa.starter.common.validation.IRepositoryValidationInt
 @Configuration
 // allow users to configure custom packages to scan for additional beans
 @ComponentScan(basePackages = {"${hapi.fhir.custom-bean-packages:}"})
-@Import(ThreadPoolFactoryConfig.class)
+@Import({ThreadPoolFactoryConfig.class, SearchConfig.class})
 public class StarterJpaConfig {
 
 	private static final Logger ourLog = LoggerFactory.getLogger(StarterJpaConfig.class);
@@ -168,13 +165,23 @@ public class StarterJpaConfig {
 	}
 
 	@Bean
+	public DaoRegistry daoRegistry(FhirContext theFhirContext, ApplicationContext theApplicationContext) {
+		return new JpaStarterDaoRegistry(theFhirContext, theApplicationContext);
+	}
+
+	@Bean
+	public DaoRegistrationService daoRegistrationService(DaoRegistry theDaoRegistry) {
+		return new DaoRegistrationService(theDaoRegistry);
+	}
+
+	@Bean
 	public IResourceSupportedSvc resourceSupportedSvc(IDaoRegistry theDaoRegistry) {
 		return new DaoRegistryResourceSupportedSvc(theDaoRegistry);
 	}
 
 	@Bean(name = "myResourceCountsCache")
-	public ResourceCountCache resourceCountsCache(IFhirSystemDao<?, ?> theSystemDao) {
-		return ResourceCountCacheUtil.newResourceCountCache(theSystemDao);
+	public ResourceCountCache resourceCountsCache(DaoRegistry theDaoRegistry) {
+		return ResourceCountCacheUtil.newResourceCountCache(theDaoRegistry);
 	}
 
 	@Primary
@@ -295,7 +302,9 @@ public class StarterJpaConfig {
 					IBaseBundle transaction = AdditionalResourcesParser.bundleAdditionalResources(
 							extraResources, packageInstallationSpec, fhirContext);
 					transactionProcessor.transaction(
-							new SystemRequestDetails().setRequestPartitionId(RequestPartitionId.defaultPartition()),
+							new SystemRequestDetails()
+									.setRequestPartitionId(
+											RequestPartitionId.fromPartitionIds(Collections.singletonList(null))),
 							transaction,
 							false);
 				}
@@ -329,6 +338,7 @@ public class StarterJpaConfig {
 
 	@Bean
 	public RestfulServer restfulServer(
+			FhirContext theFhirContext,
 			IFhirSystemDao<?, ?> fhirSystemDao,
 			AppProperties appProperties,
 			DaoRegistry daoRegistry,
@@ -358,7 +368,8 @@ public class StarterJpaConfig {
 			ApplicationContext appContext,
 			Optional<IpsOperationProvider> theIpsOperationProvider,
 			Optional<IImplementationGuideOperationProvider> implementationGuideOperationProvider,
-			DiffProvider diffProvider) {
+			DiffProvider diffProvider,
+			FhirContext fhirContext) {
 		RestfulServer fhirServer = new RestfulServer(fhirSystemDao.getContext());
 
 		List<String> supportedResourceTypes = appProperties.getSupported_resource_types();
@@ -368,6 +379,8 @@ public class StarterJpaConfig {
 				supportedResourceTypes.add("SearchParameter");
 			}
 			daoRegistry.setSupportedResourceTypes(supportedResourceTypes);
+		} else {
+			daoRegistry.setSupportedResourceTypes(theFhirContext.getResourceTypes());
 		}
 
 		if (appProperties.getNarrative_enabled()) {
